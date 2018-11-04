@@ -4,27 +4,28 @@ from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 import sys
+import os
+import shutil
 
-# if modifying these scopes, delete the file token.json
-SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
 SPREADSHEET_ID = '1jANO8_sbQ5pLEAJbyxWcQiklPboPtSp8ijrp_RTD0Aw'
+TOKEN_PATH = '/etc/opt/google-budget/token.json'
 
 if __name__ == '__main__':
     # validate input
-    transaction = sys.argv[1].split(',')
-    if len(transaction) is 4:
-        print("Transaction:", transaction)
+    entry = sys.argv[1].split(',')
+    if len(entry) is 4:
+        print("Date:", entry[0], "\nCost:", entry[1], "\nDesc:", entry[2], "\nType:", entry[3], "\n")
     else:
         print("Invalid number of fields. Aborting.")
         sys.exit(0)
 
-    # authenticate
+    # authorize
+    shutil.copyfile(TOKEN_PATH, 'token.json')
     store = file.Storage('token.json')
     creds = store.get()
-    if not creds or creds.invalid:
-        flow = client.flow_from_clientsecrets('credentials.json', SCOPES)
-        creds = tools.run_flow(flow, store)
     service = build('sheets', 'v4', http=creds.authorize(Http()))
+    os.remove('token.json')
+    print("Authorization successful.")
 
     # fetch existing transactions
     rangeName = 'Transactions!C5:C74'
@@ -38,7 +39,7 @@ if __name__ == '__main__':
 
     # add new entry
     rangeName = "Transactions!B" + str(index) + ":E" + str(index)
-    body = {'values': [transaction]}
+    body = {'values': [entry]}
     result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=rangeName,
                                                     valueInputOption="USER_ENTERED", body=body).execute()
     print('{0} cells updated.'.format(result.get('updatedCells')))
