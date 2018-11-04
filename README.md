@@ -1,8 +1,20 @@
 # google-budget
-Adds transaction entries to your budget spreadsheet.
+Add transaction entries to your budget spreadsheet from the CLI.
 
-## Spreadsheet Creation
-Create a *Monthly budget* spreadsheet from the [spreadsheet template gallery](https://docs.google.com/spreadsheets/u/0/?ftv=1&folder=0ACoSgW1iveL-Uk9PVA).
+## Preliminaries
+ 1. Create a *Monthly budget* spreadsheet from the [spreadsheet template gallery](https://docs.google.com/spreadsheets/u/0/?ftv=1&folder=0ACoSgW1iveL-Uk9PVA) if you don't already have one.
+
+ 2. Take note of your spreadsheet ID when the new sheet opens up. It's the string followed by `spreadsheets/d/` on the address bar:
+
+``` html
+https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
+```
+
+ 3. Replace the default ID with your **spreadsheet ID** in the `addexpense.py` file:
+``` python
+# replace this with your spreadsheet ID
+SPREADSHEET_ID = '1jANO8_sbQ5pLEAJbyxWcQiklPboPtSp8ijrp_RTD0Aw'
+```
 
 ## Installation
  1. Complete steps 1 & 2 of the [quickstart guide](https://developers.google.com/sheets/api/quickstart/python). Make sure that you copy your `credentials.json` file into the **project root directory.**
@@ -17,7 +29,7 @@ The installation script adds the project root directory to `PATH` in both `.zshr
 
 ``` sh
 #delete this line if you no longer use google-budget
-export PATH=$PATH:<project_root_dir>/google-budget
+export PATH=$PATH:<project_location>/google-budget
 ```
 
 ## Usage

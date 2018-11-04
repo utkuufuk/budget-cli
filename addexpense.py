@@ -7,8 +7,9 @@ import sys
 import os
 import shutil
 
+# replace this with your spreadsheet ID
 SPREADSHEET_ID = '1jANO8_sbQ5pLEAJbyxWcQiklPboPtSp8ijrp_RTD0Aw'
-TOKEN_PATH = '/etc/opt/google-budget/token.json'
+GLOBAL_TOKEN_PATH = '/etc/opt/google-budget/token.json'
 
 if __name__ == '__main__':
     # validate input
@@ -20,7 +21,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # authorize
-    shutil.copyfile(TOKEN_PATH, 'token.json')
+    shutil.copyfile(GLOBAL_TOKEN_PATH, 'token.json')
     store = file.Storage('token.json')
     creds = store.get()
     service = build('sheets', 'v4', http=creds.authorize(Http()))
