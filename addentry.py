@@ -9,7 +9,12 @@ SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
 SPREADSHEET_ID = '1jANO8_sbQ5pLEAJbyxWcQiklPboPtSp8ijrp_RTD0Aw'
 
 if __name__ == '__main__':
-    print("Transaction:", str(sys.argv[1]).split(','))
+    transaction = sys.argv[1].split(',')
+    if len(transaction) is 4:
+        print("Transaction:", transaction)
+    else:
+        print("Invalid number of fields. Aborting.")
+        sys.exit(0)
     store = file.Storage('token.json')
     creds = store.get()
     if not creds or creds.invalid:
@@ -29,8 +34,7 @@ if __name__ == '__main__':
 
     # add new entry
     rangeName = "Transactions!B" + str(index) + ":E" + str(index)
-    entry = [sys.argv[1].split(',')]
-    body = {'values': entry}
+    body = {'values': [transaction]}
     result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=rangeName,
                                                     valueInputOption="USER_ENTERED", body=body).execute()
     print('{0} cells updated.'.format(result.get('updatedCells')))
