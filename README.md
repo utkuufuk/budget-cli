@@ -1,5 +1,5 @@
 # google-budget
-Adds transaction entries to the budget spreadsheet.
+Adds transaction entries to your budget spreadsheet.
 
 ## Installation
 Install dependencies:
@@ -14,8 +14,8 @@ chmod +x install.sh
 ```
 
 ## Usage
-Run the `addentry.py` similar to the following example in order to create a transaction entry:
+You can run `addexpense.py` globally in order to create a transaction entry:
 ```
-./addentry.py "Nov 5 2018,90,Pazar Alışverişi,Groceries"
+addexpense.py "Nov 5 2018,90,Pazar Alışverişi,Groceries"
 ```
 
