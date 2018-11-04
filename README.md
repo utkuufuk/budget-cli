@@ -35,10 +35,11 @@ export PATH=$PATH:<project_location>/google-budget
 ## Usage
 You can run `addexpense.py` globally in order to create a transaction entry as follows:
 ```
-addexpense.py "<Date>,<Cost>,<Description>,<Category>"
+addexpense.py "<Date>,<Amount>,<Description>,<Category>"
 ```
 For instance:
 ```
-addexpense.py "Nov 5 2018,50,Lunch at Pizza Hut,Restaurant"
+addexpense.py "Nov 5 2018,90,Lunch at Pizza Hut,Restaurant"
 ```
 
+![Example](example.png)
