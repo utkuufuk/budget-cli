@@ -4,17 +4,20 @@ from httplib2 import Http
 from oauth2client import file, client, tools
 import sys
 
-# if modifying these scopes, delete the file token.json.
+# if modifying these scopes, delete the file token.json
 SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
 SPREADSHEET_ID = '1jANO8_sbQ5pLEAJbyxWcQiklPboPtSp8ijrp_RTD0Aw'
 
 if __name__ == '__main__':
+    # validate input
     transaction = sys.argv[1].split(',')
     if len(transaction) is 4:
         print("Transaction:", transaction)
     else:
         print("Invalid number of fields. Aborting.")
         sys.exit(0)
+
+    # authenticate
     store = file.Storage('token.json')
     creds = store.get()
     if not creds or creds.invalid:
@@ -22,7 +25,7 @@ if __name__ == '__main__':
         creds = tools.run_flow(flow, store)
     service = build('sheets', 'v4', http=creds.authorize(Http()))
 
-    # call the sheets API
+    # fetch existing transactions
     rangeName = 'Transactions!C5:C74'
     result = service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=rangeName).execute()
     values = result.get('values', [])
