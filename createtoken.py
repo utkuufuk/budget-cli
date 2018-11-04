@@ -1,4 +1,7 @@
+#!/usr/bin/env python3
 from oauth2client import file, client, tools
+from httplib2 import Http
+from googleapiclient.discovery import build
 
 # if modifying these scopes, delete the file token.json
 SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
