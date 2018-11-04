@@ -1,12 +1,12 @@
 # google-budget
-Add transaction entries to your budget spreadsheet from the CLI.
+Add expense entries to your Google budget spreadsheet from the CLI.
 
 ## Preliminaries
- 1. Create a *Monthly budget* spreadsheet from the [spreadsheet template gallery](https://docs.google.com/spreadsheets/u/0/?ftv=1&folder=0ACoSgW1iveL-Uk9PVA) if you don't already have one.
+ 1. Create a *monthly budget* spreadsheet from the [spreadsheet template gallery](https://docs.google.com/spreadsheets/u/0/?ftv=1&folder=0ACoSgW1iveL-Uk9PVA) if you don't already have one.
 
- 2. Take note of your spreadsheet ID when the new sheet opens up. It's the string followed by `spreadsheets/d/` on the address bar:
+ 2. Take note of your spreadsheet ID in the page URL when the new sheet opens up.
 
-``` html
+``` cmd
 https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ```
 
