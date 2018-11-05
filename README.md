@@ -10,16 +10,16 @@ https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ```
 
 ## Installation
- 1. Complete steps 1 & 2 of the [quickstart guide](https://developers.google.com/sheets/api/quickstart/python). Make sure that you copy the **`credentials.json`** file into the **project root directory.**
+ 1. Complete steps 1 & 2 of the [quickstart guide](https://developers.google.com/sheets/api/quickstart/python). Make sure that you copy the **`credentials.json`** file into **project directory.**
 
- 2. From the project root directory:
+ 2. From project directory:
 ``` sh
 chmod +x install.sh
 ./install.sh
 ```
 
 ## Uninstallation
-From the project root directory:
+From project directory:
 ``` sh
 ./uninstall.sh
 ```
