@@ -10,7 +10,7 @@ Add expense entries to your Google budget spreadsheet from the CLI.
 https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ```
 
- 3. Replace the default ID with your **spreadsheet ID** in the `addexpense` file:
+ 3. Replace the default ID with your **spreadsheet ID** in the `addexpense.py` file:
 ``` python
 # replace this with your spreadsheet ID
 SPREADSHEET_ID = '1jANO8_sbQ5pLEAJbyxWcQiklPboPtSp8ijrp_RTD0Aw'

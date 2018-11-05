@@ -1,22 +1,10 @@
-# make the script executable
-chmod +x addexpense
+# move script to a location in PATH and make it executable
+cp addexpense.py ~/.local/bin/addexpense
+chmod +x ~/.local/bin/addexpense
 
 # create token from credentials
 python3 createtoken.py
 
-# add project directory to PATH in both .zshrc & .bashrc
-WDIR="$(cd "$(dirname "$0")"; pwd)"
-LINE='export PATH=$PATH:'
-ZFILE=~/.zshrc
-BFILE=~/.bashrc
-COMMENT='\n#delete this line if you no longer use google-budget\n'
-grep -qF -- "$LINE$WDIR" "$ZFILE" || echo "$COMMENT$LINE$WDIR" >> "$ZFILE"
-grep -qF -- "$LINE$WDIR" "$BFILE" || echo "$COMMENT$LINE$WDIR" >> "$BFILE"
-
-source $ZFILE
-source $BFILE
-
-# move token.json to a globally accessible location with read access (/etc/opt/google-budget)
-sudo mkdir -p /etc/opt/google-budget/
-sudo cp token.json /etc/opt/google-budget/token.json
-sudo chmod +r /etc/opt/google-budget/token.json
+# move token.json to a globally accessible location with read access (~/.local/share/)
+cp token.json ~/.local/share/token.json
+chmod +r ~/.local/share/token.json

@@ -3,13 +3,14 @@ from __future__ import print_function
 from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
+from pathlib import Path
 import sys
 import os
 import shutil
 
 # replace this with your spreadsheet ID
 SPREADSHEET_ID = '1jANO8_sbQ5pLEAJbyxWcQiklPboPtSp8ijrp_RTD0Aw'
-GLOBAL_TOKEN_PATH = '/etc/opt/google-budget/token.json'
+GLOBAL_TOKEN_PATH = str(Path.home()) + '/.local/share/token.json'
 
 if __name__ == '__main__':
     # validate input
@@ -25,7 +26,6 @@ if __name__ == '__main__':
     store = file.Storage('token.json')
     creds = store.get()
     service = build('sheets', 'v4', http=creds.authorize(Http()))
-    os.remove('token.json')
     print("Authorization successful.")
 
     # fetch existing transactions
@@ -44,3 +44,4 @@ if __name__ == '__main__':
     result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=rangeName,
                                                     valueInputOption="USER_ENTERED", body=body).execute()
     print('{0} cells updated.'.format(result.get('updatedCells')))
+    os.remove('token.json')
