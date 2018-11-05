@@ -1,3 +1,6 @@
+# make the uninstallation script executable
+chmod +x uninstall.sh
+
 # move script to a location in PATH and make it executable
 cp addexpense.py ~/.local/bin/addexpense
 chmod +x ~/.local/bin/addexpense

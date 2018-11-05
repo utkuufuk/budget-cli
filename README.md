@@ -25,6 +25,12 @@ chmod +x install.sh
 ./install.sh
 ```
 
+## Uninstallation
+Run the uninstallation script from the project root directory:
+``` sh
+./uninstall.sh
+```
+
 ## Usage
 You can run `addexpense` globally in order to create a transaction entry as follows:
 ```
@@ -36,18 +42,3 @@ addexpense "Nov 5 2018,90,Lunch at Pizza Hut,Restaurant"
 ```
 
 ![Example](example.png)
-
-## Uninstallation
-Currently there's not an uninstallation script, so you have to perform the following steps manually:
-
- 1. Run the following command to remove the authorization token:
-``` sh
-sudo rm -rf /etc/opt/google-budget
-```
-
- 2. Delete the following lines from both `.zshrc` and `.bashrc`. They are inserted by the installation script so that you can use the script globally.
-
-``` sh
-#delete this line if you no longer use google-budget
-export PATH=$PATH:<project_location>/google-budget
-```
