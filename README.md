@@ -1,5 +1,5 @@
 # google-budget
-Add expense entries to your Google budget spreadsheet from the CLI.
+Append expense/income entries to your Google budget spreadsheet from the CLI.
 
 ## Preliminaries
  1. Create a *monthly budget* spreadsheet from the [spreadsheet template gallery](https://docs.google.com/spreadsheets/u/0/?ftv=1&folder=0ACoSgW1iveL-Uk9PVA) if you don't already have one.
@@ -35,10 +35,10 @@ Run the uninstallation script from the project root directory:
 ## Usage
 You can execute the `budget` command globally in order to create an expense/income entry as follows:
 ``` sh
-# insert expense entry
+# append expense entry
 budget expense "<Date>,<Amount>,<Description>,<Category>"
 
-# insert income entry
+# append income entry
 budget income "<Date>,<Amount>,<Description>,<Category>"
 ```
 
