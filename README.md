@@ -10,7 +10,7 @@ Add expense entries to your Google budget spreadsheet from the CLI.
 https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ```
 
- 3. Replace the default ID with your **spreadsheet ID** in the `addexpense.py` file:
+ 3. Replace the default ID with your **spreadsheet ID** in the `addexpense` file:
 ``` python
 # replace this with your spreadsheet ID
 SPREADSHEET_ID = '1jANO8_sbQ5pLEAJbyxWcQiklPboPtSp8ijrp_RTD0Aw'
@@ -24,22 +24,30 @@ SPREADSHEET_ID = '1jANO8_sbQ5pLEAJbyxWcQiklPboPtSp8ijrp_RTD0Aw'
 chmod +x install.sh
 ./install.sh
 ```
-#### Warning!!
-The installation script adds the project root directory to `PATH` in both `.zshrc` and `.bashrc` so that you can use the script globally. Currently there's not an uninstallation script, so **don't forget to delete the following lines from those files:**
+
+## Usage
+You can run `addexpense` globally in order to create a transaction entry as follows:
+```
+addexpense "<Date>,<Amount>,<Description>,<Category>"
+```
+For instance:
+```
+addexpense "Nov 5 2018,90,Lunch at Pizza Hut,Restaurant"
+```
+
+![Example](example.png)
+
+## Uninstallation
+Currently there's not an uninstallation script, so you have to perform the following steps manually:
+
+ 1. Run the following command to remove the authorization token:
+``` sh
+sudo rm -rf /etc/opt/google-budget
+```
+
+ 2. Delete the following lines from both `.zshrc` and `.bashrc`. They are inserted by the installation script so that you can use the script globally.
 
 ``` sh
 #delete this line if you no longer use google-budget
 export PATH=$PATH:<project_location>/google-budget
 ```
-
-## Usage
-You can run `addexpense.py` globally in order to create a transaction entry as follows:
-```
-addexpense.py "<Date>,<Amount>,<Description>,<Category>"
-```
-For instance:
-```
-addexpense.py "Nov 5 2018,90,Lunch at Pizza Hut,Restaurant"
-```
-
-![Example](example.png)

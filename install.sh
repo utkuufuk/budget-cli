@@ -1,5 +1,5 @@
 # make the script executable
-chmod +x addexpense.py
+chmod +x addexpense
 
 # create token from credentials
 python3 createtoken.py
@@ -12,6 +12,9 @@ BFILE=~/.bashrc
 COMMENT='\n#delete this line if you no longer use google-budget\n'
 grep -qF -- "$LINE$WDIR" "$ZFILE" || echo "$COMMENT$LINE$WDIR" >> "$ZFILE"
 grep -qF -- "$LINE$WDIR" "$BFILE" || echo "$COMMENT$LINE$WDIR" >> "$BFILE"
+
+source $ZFILE
+source $BFILE
 
 # move token.json to a globally accessible location with read access (/etc/opt/google-budget)
 sudo mkdir -p /etc/opt/google-budget/
