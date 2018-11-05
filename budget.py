@@ -14,11 +14,17 @@ GLOBAL_TOKEN_PATH = str(Path.home()) + '/.local/share/token.json'
 
 if __name__ == '__main__':
     # validate input
-    entry = sys.argv[1].split(',')
-    if len(entry) is 4:
-        print("Date:", entry[0], "\nCost:", entry[1], "\nDesc:", entry[2], "\nType:", entry[3], "\n")
+    command = sys.argv[1]
+    if command == 'expense' or command == 'income':
+        print("Attempting to insert new", command, "entry:")
     else:
-        print("Invalid number of fields. Aborting.")
+        print("ERROR: Invalid command. Valid commands are 'expense' and 'income'.")
+        sys.exit(0)
+    entry = sys.argv[2].split(',')
+    if len(entry) is 4:
+        print("Date:", entry[0], "\nAmount:", entry[1], "\nDescription:", entry[2], "\nCategory:", entry[3], "\n")
+    else:
+        print("ERROR: Invalid number of fields.")
         sys.exit(0)
 
     # authorize
@@ -29,7 +35,7 @@ if __name__ == '__main__':
     print("Authorization successful.")
 
     # fetch existing transactions
-    rangeName = 'Transactions!C5:C74'
+    rangeName = 'Transactions!C5:C74' if command == 'expense' else 'Transactions!H5:H74'
     result = service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=rangeName).execute()
     values = result.get('values', [])
 
@@ -39,7 +45,9 @@ if __name__ == '__main__':
         index += len(values)
 
     # add new entry
-    rangeName = "Transactions!B" + str(index) + ":E" + str(index)
+    startCol = "B" if command == 'expense' else "G"
+    endCol = "E" if command == 'expense' else "J"
+    rangeName = "Transactions!" + startCol + str(index) + ":" + endCol + str(index)
     body = {'values': [entry]}
     result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=rangeName,
                                                     valueInputOption="USER_ENTERED", body=body).execute()

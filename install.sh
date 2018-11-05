@@ -2,8 +2,8 @@
 chmod +x uninstall.sh
 
 # move script to a location in PATH and make it executable
-cp addexpense.py ~/.local/bin/addexpense
-chmod +x ~/.local/bin/addexpense
+cp budget.py ~/.local/bin/budget
+chmod +x ~/.local/bin/budget
 
 # create token from credentials
 python3 createtoken.py
