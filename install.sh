@@ -9,5 +9,7 @@ chmod +x ~/.local/bin/budget
 python3 createtoken.py
 
 # move token.json to a globally accessible location with read access (~/.local/share/)
-cp token.json ~/.local/share/token.json
-chmod +r ~/.local/share/token.json
+mkdir -p ~/.local/share/google-budget
+cp token.json ~/.local/share/google-budget/token.json
+chmod +r ~/.local/share/google-budget/token.json
+echo "Successfully installed google-budget"

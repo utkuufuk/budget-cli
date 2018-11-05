@@ -8,8 +8,8 @@ import sys
 import os
 import shutil
 
-GLOBAL_TOKEN_PATH = str(Path.home()) + '/.local/share/token.json'
-SPREADSHEET_ID_PATH = str(Path.home()) + '/.local/share/spreadsheet.id'
+GLOBAL_TOKEN_PATH = str(Path.home()) + '/.local/share/google-budget/token.json'
+SPREADSHEET_ID_PATH = str(Path.home()) + '/.local/share/google-budget/spreadsheet.id'
 
 if __name__ == '__main__':
     # validate command

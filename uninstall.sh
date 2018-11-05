@@ -1,3 +1,3 @@
 # delete script & auth token
-rm ~/.local/bin/budget
-rm ~/.local/share/token.json
+rm -f ~/.local/bin/budget
+rm -rf ~/.local/share/google-budget
