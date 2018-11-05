@@ -4,41 +4,40 @@ Append expense/income entries to your Google budget spreadsheet from the CLI.
 ## Preliminaries
  1. Create a *monthly budget* spreadsheet from the [spreadsheet template gallery](https://docs.google.com/spreadsheets/u/0/?ftv=1&folder=0ACoSgW1iveL-Uk9PVA) if you don't already have one.
 
- 2. Take note of your spreadsheet ID in the page URL when the new sheet opens up.
+ 2. When the new sheet opens up, take note of your **`SPREADSHEET_ID`** in the page URL which looks like the following:
 ``` cmd
 https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ```
 
- 3. Replace the default ID with your **spreadsheet ID** in the `budget.py` file:
-``` python
-# replace this with your spreadsheet ID
-SPREADSHEET_ID = '1jANO8_sbQ5pLEAJbyxWcQiklPboPtSp8ijrp_RTD0Aw'
-```
-
 ## Installation
- 1. Complete steps 1 & 2 of the [quickstart guide](https://developers.google.com/sheets/api/quickstart/python). Make sure that you copy your `credentials.json` file into the **project root directory.**
+ 1. Complete steps 1 & 2 of the [quickstart guide](https://developers.google.com/sheets/api/quickstart/python). Make sure that you copy the **`credentials.json`** file into the **project root directory.**
 
- 2. Run the installation script from the project root directory:
+ 2. From the project root directory:
 ``` sh
 chmod +x install.sh
 ./install.sh
 ```
 
- 3. Run the installation script again whenever you change your **spreadsheet ID.**
-
 ## Uninstallation
-Run the uninstallation script from the project root directory:
+From the project root directory:
 ``` sh
 ./uninstall.sh
 ```
 
 ## Usage
-You can execute the `budget` command globally in order to create an expense/income entry as follows:
+You can execute the **`budget`** command from anywhere **except directories that you don't have write permission.** *(Hopefully this will be fixed soon, see [issue](https://github.com/utkuufuk/google-budget/issues/2))*
+
+### Spreadsheet Selection
 ``` sh
-# append expense entry
+budget sheet <SPREADSHEET_ID>
+```
+
+### Transaction Entry
+``` sh
+# append expense
 budget expense "<Date>,<Amount>,<Description>,<Category>"
 
-# append income entry
+# append income
 budget income "<Date>,<Amount>,<Description>,<Category>"
 ```
 
