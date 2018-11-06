@@ -12,4 +12,4 @@ python3 createtoken.py
 mkdir -p ~/.local/share/google-budget
 cp token.json ~/.local/share/google-budget/token.json
 chmod +r ~/.local/share/google-budget/token.json
-echo "Successfully installed google-budget"
+echo "Successfully installed google-budget."
