@@ -8,8 +8,9 @@ import sys
 import os
 import shutil
 
-GLOBAL_TOKEN_PATH = str(Path.home()) + '/.local/share/google-budget/token.json'
-SPREADSHEET_ID_PATH = str(Path.home()) + '/.local/share/google-budget/spreadsheet.id'
+APP_DIR = str(Path.home()) + '/.local/share/google-budget/'
+GLOBAL_TOKEN_PATH = APP_DIR + 'token.json'
+SPREADSHEET_ID_PATH = APP_DIR + 'spreadsheet.id'
 
 if __name__ == '__main__':
     # validate command
@@ -43,12 +44,14 @@ if __name__ == '__main__':
         print("budget sheet <spreadsheet_id>", file=sys.stderr)
         sys.exit(1)
 
-    # temporarily copy the auth token into current dir and authorize
-    shutil.copyfile(GLOBAL_TOKEN_PATH, 'token.json')
+    # temporarily change working directory to read token.json and authorize
+    initialDir = os.getcwd()
+    os.chdir(APP_DIR)
     store = file.Storage('token.json')
     creds = store.get()
     service = build('sheets', 'v4', http=creds.authorize(Http()))
     print("Authorization successful.")
+    os.chdir(initialDir)
 
     # fetch existing data in order to find the index of the last transaction
     try:
@@ -71,4 +74,3 @@ if __name__ == '__main__':
     result = service.spreadsheets().values().update(spreadsheetId=ssheetId, range=rangeName,
                                                     valueInputOption="USER_ENTERED", body=body).execute()
     print('{0} cells updated.'.format(result.get('updatedCells')))
-    os.remove('token.json')

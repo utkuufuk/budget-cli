@@ -25,7 +25,7 @@ From project directory:
 ```
 
 ## Usage
-You can execute the **`budget`** command from anywhere **except directories that you don't have write permission.** *(Hopefully this will be fixed soon, see [issue](https://github.com/utkuufuk/google-budget/issues/2))*
+You can execute the **`budget`** command globally for spreadsheet selection and transaction entry.
 
 ### Spreadsheet Selection
 ``` sh
