@@ -1,5 +1,6 @@
 # google-budget
 Append expense/income entries to your Google budget spreadsheet from the CLI.
+![Example](example.gif)
 
 ## Preliminaries
  1. Create a *monthly budget* spreadsheet from the [spreadsheet template gallery](https://docs.google.com/spreadsheets/u/0/?ftv=1&folder=0ACoSgW1iveL-Uk9PVA) if you don't already have one.
@@ -48,9 +49,3 @@ budget income "<Date>,<Amount>,<Description>,<Category>"
 # append income for today
 budget income "<Amount>,<Description>,<Category>"
 ```
-
-#### Example
-``` sh
-budget expense "Nov 5 2018,90,Lunch at Pizza Hut,Restaurant"
-```
-![Example](example.png)
