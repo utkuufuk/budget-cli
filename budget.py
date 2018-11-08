@@ -6,7 +6,6 @@ from oauth2client import file, client, tools
 from pathlib import Path
 import sys
 import os
-import shutil
 import datetime
 
 APP_DIR = str(Path.home()) + '/.local/share/google-budget/'
@@ -64,8 +63,8 @@ if __name__ == '__main__':
         if values:
             index += len(values)
     except HttpError:
-        print("Invalid spreadsheet ID. Set your spreadsheet ID with the following command:", file=sys.stderr)
-        print("budget sheet <spreadsheet_id>", file=sys.stderr)
+        print("Invalid spreadsheet ID: " + ssheetId, file=sys.stderr)
+        print("Set your spreadsheet ID with the following command:\nbudget sheet <spreadsheet_id>", file=sys.stderr)
         sys.exit(1)
 
     # add new transaction
