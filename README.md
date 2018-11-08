@@ -28,17 +28,25 @@ From project directory:
 You can execute the **`budget`** command globally for spreadsheet selection and transaction entry.
 
 ### Spreadsheet Selection
+The selected spreadsheet ID will be used until another spreadsheet ID is selected.
 ``` sh
 budget sheet <SPREADSHEET_ID>
 ```
 
 ### Transaction Entry
+Transaction entries can be specified with or without a date field. In the latter case, the date field will be automatically assigned to today's date.
 ``` sh
-# append expense
+# append expense for custom date
 budget expense "<Date>,<Amount>,<Description>,<Category>"
 
-# append income
+# append expense for today
+budget expense "<Amount>,<Description>,<Category>"
+
+# append income for custom date
 budget income "<Date>,<Amount>,<Description>,<Category>"
+
+# append income for today
+budget income "<Amount>,<Description>,<Category>"
 ```
 
 #### Example
