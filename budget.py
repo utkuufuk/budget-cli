@@ -59,9 +59,7 @@ if __name__ == '__main__':
         rangeName = 'Transactions!C5:C74' if command == 'expense' else 'Transactions!H5:H74'
         result = service.spreadsheets().values().get(spreadsheetId=ssheetId, range=rangeName).execute()
         values = result.get('values', [])
-        index = 5
-        if values:
-            index += len(values)
+        index = 5 if not values else 5 + len(values)
     except HttpError:
         print("Invalid spreadsheet ID: " + ssheetId, file=sys.stderr)
         print("Set your spreadsheet ID with the following command:\nbudget sheet <spreadsheet_id>", file=sys.stderr)
