@@ -1,5 +1,6 @@
 # google-budget
 Append expense/income entries to your Google budget spreadsheet from the CLI.
+
 ![Example](example.gif)
 
 ## Preliminaries
