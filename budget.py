@@ -8,7 +8,7 @@ import sys
 import os
 import datetime
 
-APP_DIR = str(Path.home()) + '/.local/share/google-budget/'
+APP_DIR = str(Path.home()) + '/.local/share/budget-cli/'
 GLOBAL_TOKEN_PATH = APP_DIR + 'token.json'
 SPREADSHEET_ID_PATH = APP_DIR + 'spreadsheet.id'
 
