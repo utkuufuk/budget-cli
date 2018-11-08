@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import os
 import shutil
+import datetime
 
 APP_DIR = str(Path.home()) + '/.local/share/google-budget/'
 GLOBAL_TOKEN_PATH = APP_DIR + 'token.json'
@@ -15,25 +16,26 @@ SPREADSHEET_ID_PATH = APP_DIR + 'spreadsheet.id'
 if __name__ == '__main__':
     # validate command
     command = sys.argv[1]
-    if command == 'expense' or command == 'income':
-        print("Attempting to insert new", command, "transaction:")
-    elif command == 'sheet':
+    if command == 'sheet':
         # write spreadsheet ID
         with open(SPREADSHEET_ID_PATH, 'w') as f:
             f.write(sys.argv[2])
         print("Spreadsheet ID has been set:", sys.argv[2])
         sys.exit(0)
-    else:
+    if command != 'expense' and command != 'income':
         print("Invalid command. Valid commands are 'sheet', 'expense' and 'income'.", file=sys.stderr)
         sys.exit(1)
 
     # validate transaction
     entry = sys.argv[2].split(',')
-    if len(entry) is 4:
-        print("Date:", entry[0], "\nAmount:", entry[1], "\nDescription:", entry[2], "\nCategory:", entry[3], "\n")
-    else:
+    if len(entry) != 3 and len(entry) != 4:
         print("Invalid number of fields in transaction.", file=sys.stderr)
         sys.exit(1)
+    if len(entry) is 3:
+        print("Only 3 fields were specified. Assigning today to date field.")
+        now = datetime.datetime.now()
+        entry.insert(0, str(now)[:10])
+    print("Date:", entry[0], "\nAmount:", entry[1], "\nDescription:", entry[2], "\nCategory:", entry[3], "\n")
 
     # read spreadsheet ID
     try:
