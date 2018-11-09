@@ -6,7 +6,7 @@ Append expense/income entries to your Google budget spreadsheet from the CLI.
 ## Preliminaries
  1. Create a *monthly budget* spreadsheet from the [spreadsheet template gallery](https://docs.google.com/spreadsheets/u/0/?ftv=1&folder=0ACoSgW1iveL-Uk9PVA) if you don't already have one.
 
- 2. When the new sheet opens up, take note of your **`SPREADSHEET_ID`** in the page URL which looks like the following:
+ 2. When the new sheet opens up, take note of your **`SPREADSHEET_ID`** or the URL itself which looks like the following:
 ``` cmd
 https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ```
@@ -32,7 +32,11 @@ You can execute the **`budget`** command globally for spreadsheet selection and 
 ### Spreadsheet Selection
 The selected spreadsheet ID will be used until another spreadsheet ID is selected.
 ``` sh
-budget sheet <SPREADSHEET_ID>
+# select spreadsheet by ID
+budget id <SPREADSHEET_ID>
+
+# select spreadsheet by URL
+budget url <SPREADSHEET_URL>
 ```
 
 ### Transaction Entry

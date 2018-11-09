@@ -15,14 +15,16 @@ SPREADSHEET_ID_PATH = APP_DIR + 'spreadsheet.id'
 if __name__ == '__main__':
     # validate command
     command = sys.argv[1]
-    if command == 'sheet':
+    if command == 'url' or command == 'id':
+        arg = sys.argv[2]
+        ssheetId = arg if command == 'id' else arg[(arg.find("spreadsheets/d/") + 15):arg.find("/edit#")]
         # write spreadsheet ID
         with open(SPREADSHEET_ID_PATH, 'w') as f:
-            f.write(sys.argv[2])
-        print("Spreadsheet ID has been set:", sys.argv[2])
+            f.write(ssheetId)
+        print("Spreadsheet ID has been set:", ssheetId)
         sys.exit(0)
     if command != 'expense' and command != 'income':
-        print("Invalid command. Valid commands are 'sheet', 'expense' and 'income'.", file=sys.stderr)
+        print("Invalid command. Valid commands are 'id', 'url', 'expense' and 'income'.", file=sys.stderr)
         sys.exit(1)
 
     # validate transaction
@@ -41,8 +43,8 @@ if __name__ == '__main__':
         with open(SPREADSHEET_ID_PATH) as f:
             ssheetId = f.read()
     except:
-        print("Spreadsheet ID not found. Set your spreadsheet ID with the following command:", file=sys.stderr)
-        print("budget sheet <spreadsheet_id>", file=sys.stderr)
+        print("Spreadsheet ID not found. Set your spreadsheet ID with one of the following commands:", file=sys.stderr)
+        print("budget id <SPREADSHEET_ID>\nbudget url <SPREADSHEET_URL>", file=sys.stderr)
         sys.exit(1)
 
     # temporarily change working directory to read token.json and authorize
