@@ -52,7 +52,7 @@ if __name__ == '__main__':
         with open(SPREADSHEET_ID_PATH) as f:
             ssheetId = f.read()
     except:
-        print("Spreadsheet ID not found. Set your spreadsheet ID with one of the following commands:", file=sys.stderr)
+        print("Spreadsheet ID not found. Set it using one of the following commands:", file=sys.stderr)
         print("budget id <SPREADSHEET_ID>\nbudget url <SPREADSHEET_URL>", file=sys.stderr)
         sys.exit(1)
 
@@ -72,8 +72,8 @@ if __name__ == '__main__':
         values = result.get('values', [])
         rowIdx = 5 if not values else 5 + len(values)
     except HttpError:
-        print("Invalid spreadsheet ID: " + ssheetId, file=sys.stderr)
-        print("Set your spreadsheet ID with the following command:\nbudget sheet <spreadsheet_id>", file=sys.stderr)
+        print("Invalid spreadsheet ID: " + ssheetId + "\nSet it using one of the following commands:", file=sys.stderr)
+        print("budget id <SPREADSHEET_ID>\nbudget url <SPREADSHEET_URL>", file=sys.stderr)
         sys.exit(1)
 
     # add new transaction
