@@ -36,8 +36,10 @@ if __name__ == '__main__':
         print("Invalid command:", command, "\nValid commands are 'id', 'url', 'expense' and 'income'.", file=sys.stderr)
         sys.exit(1)
 
+    # remove leading & trailing whitespaces from input parameters if any
+    entry = [e.strip() for e in arg.split(',')]
+
     # validate transaction if command is 'expense' or 'income'
-    entry = arg.split(',')
     if len(entry) != 3 and len(entry) != 4:
         print("Invalid number of fields in transaction.", file=sys.stderr)
         sys.exit(1)
@@ -45,7 +47,6 @@ if __name__ == '__main__':
         print("Only 3 fields were specified. Assigning today to date field.")
         now = datetime.datetime.now()
         entry.insert(0, str(now)[:10])
-    print("Date:", entry[0], "\nAmount:", entry[1], "\nDescription:", entry[2], "\nCategory:", entry[3], "\n")
 
     # read spreadsheet ID from file
     try:
