@@ -8,7 +8,7 @@ import sys
 import os
 import datetime
 
-APP_DIR = str(Path.home()) + '/.local/share/budget-cli/'
+APP_DIR = str(Path.home()) + '/.config/budget-cli/'
 SPREADSHEET_ID_PATH = APP_DIR + 'spreadsheet.id'
 
 if __name__ == '__main__':

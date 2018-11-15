@@ -1,4 +1,4 @@
 # delete script and 'budget-cli' directory
-rm -f ~/.local/bin/budget
-rm -rf ~/.local/share/budget-cli
+sudo rm -f /usr/bin/budget
+rm -rf ~/.config/budget-cli
 echo "Successfully uninstalled budget-cli."
