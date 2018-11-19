@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     # read spreadsheet ID and get date
     ssheetId = readId()
-    summary = readCells(service, ssheetId, 'Summary!B2:I16')
+    summary = readCells(service, ssheetId, 'Summary!B8:I22')
 
     # handle 'summary' command
     if cmd == 'summary':
