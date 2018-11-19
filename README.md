@@ -32,11 +32,20 @@ You can execute the **`budget`** command globally for spreadsheet selection and 
 ### Spreadsheet Selection
 The selected spreadsheet ID will be used until another spreadsheet ID is selected.
 ``` sh
+# print selected spreadsheet ID
+budget id
+
 # select spreadsheet by ID
 budget id <SPREADSHEET_ID>
 
 # select spreadsheet by URL
 budget url <SPREADSHEET_URL>
+```
+
+### Monitoring
+``` sh
+# print budget summary
+budget summary
 ```
 
 ### Transaction Entry
