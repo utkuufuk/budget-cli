@@ -10,6 +10,7 @@ import datetime
 
 APP_DIR = str(Path.home()) + '/.config/budget-cli/'
 SPREADSHEET_ID_PATH = APP_DIR + 'spreadsheet.id'
+MAX_ENTRIES = "100"
 
 # writes spreadsheet ID to file
 def writeId(ssheetId):
@@ -36,16 +37,21 @@ def readRange(service, ssheetId, rangeName):
         print("budget id <SPREADSHEET_ID>\nbudget url <SPREADSHEET_URL>", file=sys.stderr)
         sys.exit(1)
 
+def log(entries, header):
+    print("\n" + header + ":\n=============================================================================")
+    for cols in entries:
+        print("{0:>12s} {1:>10s}    {2:<35s} {3:<15s}".format(cols[0], cols[1], cols[2], cols[3]))
+
 if __name__ == '__main__':
     # validate command
-    command = sys.argv[1]
-    if command != 'id' and command != 'url' and command != 'expense' and command != 'income' and command != 'summary':
-        print("Invalid command. Valid commands are 'id', 'url', 'summary', 'expense' and 'income'.", file=sys.stderr)
+    cmd = sys.argv[1]
+    if cmd != 'id' and cmd != 'url' and cmd != 'expense' and cmd != 'log' and cmd != 'income' and cmd != 'summary':
+        print("Invalid command. Valid commands are: id, url, summary, log, expense and income.", file=sys.stderr)
         sys.exit(1)
     arg = None if len(sys.argv) == 2 else sys.argv[2]
 
     # handle 'url' command
-    if command == 'url': 
+    if cmd == 'url': 
         start = arg.find("spreadsheets/d/")
         end = arg.find("/edit#")
         if start == -1 or end == -1:
@@ -55,7 +61,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # handle 'id' command
-    if command == 'id':
+    if cmd == 'id':
         if arg == None:
             print("Spreadsheet ID:", readId())
         else:
@@ -75,10 +81,16 @@ if __name__ == '__main__':
     date = readRange(service, ssheetId, 'Summary!B2:E3')[0][0]
 
     # handle 'summary' command
-    if command == 'summary':
+    if cmd == 'summary':
         print("\n" + date + "\n=======================")
         print("Total Expense:", readRange(service, ssheetId, 'Summary!C16')[0][0])
         print("Total Income:", readRange(service, ssheetId, 'Summary!I16')[0][0])
+        sys.exit(0)
+
+    # handle 'log' command
+    if cmd == 'log':
+        log(readRange(service, ssheetId, 'Transactions!B5:E' + MAX_ENTRIES), "EXPENSES")
+        log(readRange(service, ssheetId, 'Transactions!G5:J' + MAX_ENTRIES), "INCOME")
         sys.exit(0)
 
     # remove leading & trailing whitespaces from input parameters if any
@@ -94,12 +106,12 @@ if __name__ == '__main__':
         entry.insert(0, str(now)[:10])
 
     # fetch existing data in order to find the row index of the last transaction
-    values = readRange(service, ssheetId, 'Transactions!C5:C74' if command == 'expense' else 'Transactions!H5:H74')
+    values = readRange(service, ssheetId, 'Transactions!C5:C' if cmd == 'expense' else 'Transactions!H5:H' + MAX_ENTRIES)
     rowIdx = 5 if not values else 5 + len(values)
 
     # add new transaction
-    startCol = "B" if command == 'expense' else "G"
-    endCol = "E" if command == 'expense' else "J"
+    startCol = "B" if cmd == 'expense' else "G"
+    endCol = "E" if cmd == 'expense' else "J"
     rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
     body = {'values': [entry]}
     result = service.spreadsheets().values().update(spreadsheetId=ssheetId, range=rangeName,

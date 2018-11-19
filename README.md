@@ -46,6 +46,9 @@ budget url <SPREADSHEET_URL>
 ``` sh
 # print budget summary
 budget summary
+
+# list all transactions
+budget log
 ```
 
 ### Transaction Entry
