@@ -1,7 +1,11 @@
 # budget-cli
-Append expense/income entries to your Google budget spreadsheet from the CLI.
+#### Insert Budget Transactions
 
-![Example](example.gif)
+![Expense](expense.gif)
+
+#### Log Transaction History
+
+![Log](log.gif)
 
 ## Preliminaries
  1. Create a *monthly budget* spreadsheet from the [spreadsheet template gallery](https://docs.google.com/spreadsheets/u/0/?ftv=1&folder=0ACoSgW1iveL-Uk9PVA) if you don't already have one.
