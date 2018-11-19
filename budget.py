@@ -29,7 +29,7 @@ def readId():
         print("budget id <SPREADSHEET_ID>\nbudget url <SPREADSHEET_URL>", file=sys.stderr)
         sys.exit(1)
 
-def readRange(service, ssheetId, rangeName):
+def readCells(service, ssheetId, rangeName):
     try:
         return service.spreadsheets().values().get(spreadsheetId=ssheetId, range=rangeName).execute().get('values', [])
     except HttpError:
@@ -78,19 +78,22 @@ if __name__ == '__main__':
 
     # read spreadsheet ID and get date
     ssheetId = readId()
-    date = readRange(service, ssheetId, 'Summary!B2:E3')[0][0]
+    summary = readCells(service, ssheetId, 'Summary!B2:I16')
 
     # handle 'summary' command
     if cmd == 'summary':
-        print("\n" + date + "\n=======================")
-        result = readRange(service, ssheetId, 'Summary!C16:I16')[0]
-        print("Total Expense: {0:>8s}\nTotal Income:  {1:>8s}".format(result[0], result[-1]))
+        print("\n" + summary[0][0] + "\n=======================")
+        print("Total Expense: {0:>8s}\nTotal Income:  {1:>8s}".format(summary[14][1], summary[14][-1]))
         sys.exit(0)
+
+    # get existing expense & income entries
+    expenses = readCells(service, ssheetId, 'Transactions!B5:E' + MAX_ENTRIES)
+    income = readCells(service, ssheetId, 'Transactions!G5:J' + MAX_ENTRIES)
 
     # handle 'log' command
     if cmd == 'log':
-        log(readRange(service, ssheetId, 'Transactions!B5:E' + MAX_ENTRIES), "EXPENSES")
-        log(readRange(service, ssheetId, 'Transactions!G5:J' + MAX_ENTRIES), "INCOME")
+        log(expenses, "EXPENSES")
+        log(income, "INCOME")
         sys.exit(0)
 
     # remove leading & trailing whitespaces from input parameters if any
@@ -105,15 +108,14 @@ if __name__ == '__main__':
         now = datetime.datetime.now()
         entry.insert(0, str(now)[:10])
 
-    # fetch existing data in order to find the row index of the last transaction
-    values = readRange(service, ssheetId, 'Transactions!C5:C' if cmd == 'expense' else 'Transactions!H5:H' + MAX_ENTRIES)
+    # find row index of last transaction
+    values = expenses if cmd == 'expense' else income
     rowIdx = 5 if not values else 5 + len(values)
 
     # add new transaction
     startCol = "B" if cmd == 'expense' else "G"
     endCol = "E" if cmd == 'expense' else "J"
     rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
-    body = {'values': [entry]}
     result = service.spreadsheets().values().update(spreadsheetId=ssheetId, range=rangeName,
-                                                    valueInputOption="USER_ENTERED", body=body).execute()
-    print('{0} cells updated for {1}.'.format(result.get('updatedCells'), date))
+                                                    valueInputOption="USER_ENTERED", body={'values': [entry]}).execute()
+    print('{0} cells updated for {1}.'.format(result.get('updatedCells'), summary[0][0]))
