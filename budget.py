@@ -83,8 +83,8 @@ if __name__ == '__main__':
     # handle 'summary' command
     if cmd == 'summary':
         print("\n" + date + "\n=======================")
-        print("Total Expense:", readRange(service, ssheetId, 'Summary!C16')[0][0])
-        print("Total Income:", readRange(service, ssheetId, 'Summary!I16')[0][0])
+        result = readRange(service, ssheetId, 'Summary!C16:I16')[0]
+        print("Total Expense: {0:>8s}\nTotal Income:  {1:>8s}".format(result[0], result[-1]))
         sys.exit(0)
 
     # handle 'log' command
