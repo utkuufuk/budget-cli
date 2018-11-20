@@ -10,7 +10,11 @@ import datetime
 
 APP_DIR = str(Path.home()) + '/.config/budget-cli/'
 SPREADSHEET_ID_PATH = APP_DIR + 'spreadsheet.id'
-MAX_ENTRIES = "100"
+MAX_ROWS = 100
+NUM_EXPENSE_CATEGORIES = 48
+NUM_INCOME_CATEGORIES = 4
+MONTHS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
+          'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
 
 # writes spreadsheet ID to file
 def writeId(ssheetId):
@@ -29,6 +33,16 @@ def readId():
         print("budget id <SPREADSHEET_ID>\nbudget url <SPREADSHEET_URL>", file=sys.stderr)
         sys.exit(1)
 
+# extracts the ID of a spreadsheet from its URL
+def extractId(url):
+    start = url.find("spreadsheets/d/")
+    end = url.find("/edit#")
+    if start == -1 or end == -1:
+        print("Invalid URL:", url, file=sys.stderr)
+        sys.exit(1)
+    return arg[(start + 15):end]
+
+# reads MxN cells from a spreadsheet
 def readCells(service, ssheetId, rangeName):
     try:
         return service.spreadsheets().values().get(spreadsheetId=ssheetId, range=rangeName).execute().get('values', [])
@@ -37,7 +51,26 @@ def readCells(service, ssheetId, rangeName):
         print("budget id <SPREADSHEET_ID>\nbudget url <SPREADSHEET_URL>", file=sys.stderr)
         sys.exit(1)
 
-def log(entries, header):
+# writes MxN cells into a spreadsheet
+def writeCells(service, ssheetId, rangeName, values):
+    return service.spreadsheets().values().update(spreadsheetId=ssheetId, range=rangeName,
+                                                  valueInputOption="USER_ENTERED", body={'values': values}).execute()
+
+# copies monthly budget information to annual budget
+def syncAnnual(service, annualId, sheetName, dictionary, monthCol, numCategories):
+    count = 0
+    for r in range(1, MAX_ROWS):
+        rangeName = sheetName + '!C' + str(3 + r)
+        key = readCells(service, annualId, rangeName)
+        if key and key[0][0] in dictionary.keys():
+            rangeName = sheetName + '!' + monthCol + str(3 + r)
+            writeCells(service, annualId, rangeName, [[dictionary[key[0][0]]]])
+            count += 1
+            if count == numCategories:
+                break
+
+# prints entries on the terminal as a table
+def logEntries(entries, header):
     print("\n" + header + ":\n=============================================================================")
     for cols in entries:
         print("{0:>12s} {1:>10s}    {2:<35s} {3:<15s}".format(cols[0], cols[1], cols[2], cols[3]))
@@ -45,19 +78,16 @@ def log(entries, header):
 if __name__ == '__main__':
     # validate command
     cmd = sys.argv[1]
-    if cmd != 'id' and cmd != 'url' and cmd != 'expense' and cmd != 'log' and cmd != 'income' and cmd != 'summary':
-        print("Invalid command. Valid commands are: id, url, summary, log, expense and income.", file=sys.stderr)
+    if cmd != 'id' and cmd != 'url' and cmd != 'expense' and cmd != 'log' and \
+       cmd != 'annual' and cmd != 'income' and cmd != 'summary':
+        print("Invalid command. Valid commands are: id, url, summary, annual, log, expense & income.", file=sys.stderr)
         sys.exit(1)
     arg = None if len(sys.argv) == 2 else sys.argv[2]
 
     # handle 'url' command
     if cmd == 'url': 
-        start = arg.find("spreadsheets/d/")
-        end = arg.find("/edit#")
-        if start == -1 or end == -1:
-            print("Invalid URL:", arg, file=sys.stderr)
-            sys.exit(1)
-        writeId(arg[(start + 15):end])
+        ssheetId = extractId(arg)
+        writeId(ssheetId)
         sys.exit(0)
 
     # handle 'id' command
@@ -78,22 +108,32 @@ if __name__ == '__main__':
 
     # read spreadsheet ID and get date
     ssheetId = readId()
-    summary = readCells(service, ssheetId, 'Summary!B8:I22')
+    summary = readCells(service, ssheetId, 'Summary!B8:K' + str(27 + NUM_EXPENSE_CATEGORIES))
 
     # handle 'summary' command
     if cmd == 'summary':
         print("\n" + summary[0][0] + "\n=======================")
-        print("Total Expense: {0:>8s}\nTotal Income:  {1:>8s}".format(summary[14][1], summary[14][-1]))
+        print("Total Expense: {0:>8s}\nTotal Income:  {1:>8s}".format(summary[14][1], summary[14][7]))
+        sys.exit(0)
+
+    # handle 'annual' command
+    if cmd == 'annual':
+        annualId = extractId(arg)
+        monthCol = MONTHS[summary[0][0][:3]]
+        expenses = {summary[r][0]:summary[r][3] for r in range(20, 20 + NUM_EXPENSE_CATEGORIES)}
+        income = {summary[r][6]:summary[r][9] for r in range(20, 20 + NUM_INCOME_CATEGORIES)}
+        syncAnnual(service, annualId, 'Expenses', expenses, monthCol, NUM_EXPENSE_CATEGORIES)
+        syncAnnual(service, annualId, 'Income', income, monthCol, NUM_INCOME_CATEGORIES)
         sys.exit(0)
 
     # get existing expense & income entries
-    expenses = readCells(service, ssheetId, 'Transactions!B5:E' + MAX_ENTRIES)
-    income = readCells(service, ssheetId, 'Transactions!G5:J' + MAX_ENTRIES)
+    expenses = readCells(service, ssheetId, 'Transactions!B5:E' + str(MAX_ROWS))
+    income = readCells(service, ssheetId, 'Transactions!G5:J' + str(MAX_ROWS))
 
     # handle 'log' command
     if cmd == 'log':
-        log(expenses, "EXPENSES")
-        log(income, "INCOME")
+        logEntries(expenses, "EXPENSES")
+        logEntries(income, "INCOME")
         sys.exit(0)
 
     # remove leading & trailing whitespaces from input parameters if any
@@ -116,6 +156,5 @@ if __name__ == '__main__':
     startCol = "B" if cmd == 'expense' else "G"
     endCol = "E" if cmd == 'expense' else "J"
     rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
-    result = service.spreadsheets().values().update(spreadsheetId=ssheetId, range=rangeName,
-                                                    valueInputOption="USER_ENTERED", body={'values': [entry]}).execute()
+    result = writeCells(service, ssheetId, rangeName, [entry])
     print('{0} cells updated for {1}.'.format(result.get('updatedCells'), summary[0][0]))
