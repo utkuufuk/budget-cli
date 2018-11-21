@@ -11,7 +11,7 @@ import datetime
 APP_DIR = str(Path.home()) + '/.config/budget-cli/'
 SPREADSHEET_ID_PATH = APP_DIR + 'spreadsheet.id'
 MAX_ROWS = 100
-NUM_EXPENSE_CATEGORIES = 48
+NUM_EXPENSE_CATEGORIES = 43
 NUM_INCOME_CATEGORIES = 4
 MONTHS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
           'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
@@ -59,12 +59,12 @@ def writeCells(service, ssheetId, rangeName, values):
 # copies monthly budget information to annual budget
 def syncAnnual(service, annualId, sheetName, dictionary, monthCol, numCategories):
     count = 0
-    for r in range(1, MAX_ROWS):
-        rangeName = sheetName + '!C' + str(3 + r)
-        key = readCells(service, annualId, rangeName)
-        if key and key[0][0] in dictionary.keys():
-            rangeName = sheetName + '!' + monthCol + str(3 + r)
-            writeCells(service, annualId, rangeName, [[dictionary[key[0][0]]]])
+    rangeName = sheetName + '!C4:C' + str(MAX_ROWS)
+    keys = readCells(service, annualId, rangeName)
+    for row in range(0, MAX_ROWS):
+        if keys[row] and keys[row][0] in dictionary.keys():
+            rangeName = sheetName + '!' + monthCol + str(4 + row)
+            writeCells(service, annualId, rangeName, [[dictionary[keys[row][0]]]])
             count += 1
             if count == numCategories:
                 break
@@ -120,8 +120,8 @@ if __name__ == '__main__':
     if cmd == 'annual':
         annualId = extractId(arg)
         monthCol = MONTHS[summary[0][0][:3]]
-        expenses = {summary[r][0]:summary[r][3] for r in range(20, 20 + NUM_EXPENSE_CATEGORIES)}
-        income = {summary[r][6]:summary[r][9] for r in range(20, 20 + NUM_INCOME_CATEGORIES)}
+        expenses = {summary[row][0]:summary[row][3] for row in range(20, 20 + NUM_EXPENSE_CATEGORIES)}
+        income = {summary[row][6]:summary[row][9] for row in range(20, 20 + NUM_INCOME_CATEGORIES)}
         syncAnnual(service, annualId, 'Expenses', expenses, monthCol, NUM_EXPENSE_CATEGORIES)
         syncAnnual(service, annualId, 'Income', income, monthCol, NUM_INCOME_CATEGORIES)
         sys.exit(0)
