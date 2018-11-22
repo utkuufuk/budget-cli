@@ -7,31 +7,24 @@ from pathlib import Path
 import sys
 import os
 import datetime
+import json
 
 APP_DIR = str(Path.home()) + '/.config/budget-cli/'
-SPREADSHEET_ID_PATH = APP_DIR + 'spreadsheet.id'
-MAX_ROWS = 100
-NUM_EXPENSE_CATEGORIES = 43
-NUM_INCOME_CATEGORIES = 4
+CONFIG_FILE_PATH = APP_DIR + 'config.json'
+MONTHLY_ID_KEY = 'monthly-budget-id'
+ANNUAL_ID_KEY = 'annual-budget-id'
+NUM_EXPENSE_CATEGORIES_KEY = 'num-expense-categories'
+NUM_INCOME_CATEGORIES_KEY = 'num-income-categories'
+MAX_ROWS_KEY = 'max-rows'
 MONTHS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
           'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
+COMMANDS = ['mid', 'aid', 'murl', 'aurl', 'summary', 'log', 'sync', 'expense', 'income']
 
 # writes spreadsheet ID to file
-def writeId(ssheetId):
-    with open(SPREADSHEET_ID_PATH, 'w') as f:
-        f.write(ssheetId)
-    print("Spreadsheet ID has been set:", ssheetId)
+def saveConfig(config):
+    with open(CONFIG_FILE_PATH, 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=4, ensure_ascii=False)
     sys.exit(0)
-
-# reads spreadsheet ID from file
-def readId():
-    try:
-        with open(SPREADSHEET_ID_PATH) as f:
-            return f.read()
-    except:
-        print("Spreadsheet ID not found. Set it using one of the following commands:", file=sys.stderr)
-        print("budget id <SPREADSHEET_ID>\nbudget url <SPREADSHEET_URL>", file=sys.stderr)
-        sys.exit(1)
 
 # extracts the ID of a spreadsheet from its URL
 def extractId(url):
@@ -47,8 +40,7 @@ def readCells(service, ssheetId, rangeName):
     try:
         return service.spreadsheets().values().get(spreadsheetId=ssheetId, range=rangeName).execute().get('values', [])
     except HttpError:
-        print("Invalid spreadsheet ID: " + ssheetId + "\nSet it using one of the following commands:", file=sys.stderr)
-        print("budget id <SPREADSHEET_ID>\nbudget url <SPREADSHEET_URL>", file=sys.stderr)
+        print("HTTP Error. Spreadsheet ID might be invalid:", ssheetId, file=sys.stderr)
         sys.exit(1)
 
 # writes MxN cells into a spreadsheet
@@ -57,11 +49,11 @@ def writeCells(service, ssheetId, rangeName, values):
                                                   valueInputOption="USER_ENTERED", body={'values': values}).execute()
 
 # copies monthly budget information to annual budget
-def syncAnnual(service, annualId, sheetName, dictionary, monthCol, numCategories):
+def syncAnnual(service, annualId, sheetName, dictionary, monthCol, numCategories, maxRows):
     count = 0
-    rangeName = sheetName + '!C4:C' + str(MAX_ROWS)
+    rangeName = sheetName + '!C4:C' + str(maxRows)
     keys = readCells(service, annualId, rangeName)
-    for row in range(0, MAX_ROWS):
+    for row in range(0, maxRows):
         if keys[row] and keys[row][0] in dictionary.keys():
             rangeName = sheetName + '!' + monthCol + str(4 + row)
             writeCells(service, annualId, rangeName, [[dictionary[keys[row][0]]]])
@@ -78,24 +70,33 @@ def logEntries(entries, header):
 if __name__ == '__main__':
     # validate command
     cmd = sys.argv[1]
-    if cmd != 'id' and cmd != 'url' and cmd != 'expense' and cmd != 'log' and \
-       cmd != 'annual' and cmd != 'income' and cmd != 'summary':
-        print("Invalid command. Valid commands are: id, url, summary, annual, log, expense & income.", file=sys.stderr)
+    if cmd not in COMMANDS:
+        print("Invalid command. Valid commands are:", COMMANDS, file=sys.stderr)
         sys.exit(1)
     arg = None if len(sys.argv) == 2 else sys.argv[2]
 
-    # handle 'url' command
-    if cmd == 'url': 
+    # read configuration file
+    try:
+        config = json.load(open(CONFIG_FILE_PATH))
+    except FileNotFoundError:
+        print('Configuration file not found.', file=sys.stderr)
+        sys.exit(1)
+
+    # handle 'murl' & 'aurl' commands
+    if cmd == 'murl' or cmd == 'aurl':
         ssheetId = extractId(arg)
-        writeId(ssheetId)
+        config[MONTHLY_ID_KEY if cmd == 'murl' else ANNUAL_ID_KEY] = ssheetId
+        print(("Monthly" if cmd == 'mid' else "Annual") + " Budget Spreadsheet ID:", ssheetId)
+        saveConfig(config)
         sys.exit(0)
 
-    # handle 'id' command
-    if cmd == 'id':
-        if arg == None:
-            print("Spreadsheet ID:", readId())
-        else:
-            writeId(arg)
+    # handle 'mid' & 'aid' commands
+    if cmd == 'mid' or cmd == 'aid':
+        key = MONTHLY_ID_KEY if cmd == 'mid' else ANNUAL_ID_KEY
+        if arg != None:
+            config[key] = arg
+            saveConfig(config)
+        print(("Monthly" if cmd == 'mid' else "Annual") + " Budget Spreadsheet ID:", config[key])
         sys.exit(0)
 
     # temporarily change working directory to read token.json & authorize
@@ -107,8 +108,8 @@ if __name__ == '__main__':
     os.chdir(initialDir)
 
     # read spreadsheet ID and get date
-    ssheetId = readId()
-    summary = readCells(service, ssheetId, 'Summary!B8:K' + str(27 + NUM_EXPENSE_CATEGORIES))
+    ssheetId = config[MONTHLY_ID_KEY]
+    summary = readCells(service, ssheetId, 'Summary!B8:K' + str(27 + config[NUM_EXPENSE_CATEGORIES_KEY]))
 
     # handle 'summary' command
     if cmd == 'summary':
@@ -117,18 +118,22 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # handle 'annual' command
-    if cmd == 'annual':
-        annualId = extractId(arg)
+    if cmd == 'sync':
         monthCol = MONTHS[summary[0][0][:3]]
-        expenses = {summary[row][0]:summary[row][3] for row in range(20, 20 + NUM_EXPENSE_CATEGORIES)}
-        income = {summary[row][6]:summary[row][9] for row in range(20, 20 + NUM_INCOME_CATEGORIES)}
-        syncAnnual(service, annualId, 'Expenses', expenses, monthCol, NUM_EXPENSE_CATEGORIES)
-        syncAnnual(service, annualId, 'Income', income, monthCol, NUM_INCOME_CATEGORIES)
+        expenses = {summary[row][0]:summary[row][3] for row in range(20, 20 + config[NUM_EXPENSE_CATEGORIES_KEY])}
+        income = {summary[row][6]:summary[row][9] for row in range(20, 20 + config[NUM_INCOME_CATEGORIES_KEY])}
+        print("Synchronizing expenses from", summary[0][0], "with annual budget spreadsheet.")
+        syncAnnual(service, config[ANNUAL_ID_KEY], 'Expenses', expenses, monthCol,
+                   config[NUM_EXPENSE_CATEGORIES_KEY], config[MAX_ROWS_KEY])
+        print("Synchronizing income from", summary[0][0], "with annual budget spreadsheet.")
+        syncAnnual(service, config[ANNUAL_ID_KEY], 'Income', income, monthCol,
+                   config[NUM_INCOME_CATEGORIES_KEY], config[MAX_ROWS_KEY])
+        print("Synchronization successful.")
         sys.exit(0)
 
     # get existing expense & income entries
-    expenses = readCells(service, ssheetId, 'Transactions!B5:E' + str(MAX_ROWS))
-    income = readCells(service, ssheetId, 'Transactions!G5:J' + str(MAX_ROWS))
+    expenses = readCells(service, ssheetId, 'Transactions!B5:E' + str(config[MAX_ROWS_KEY]))
+    income = readCells(service, ssheetId, 'Transactions!G5:J' + str(config[MAX_ROWS_KEY]))
 
     # handle 'log' command
     if cmd == 'log':
@@ -157,4 +162,4 @@ if __name__ == '__main__':
     endCol = "E" if cmd == 'expense' else "J"
     rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
     result = writeCells(service, ssheetId, rangeName, [entry])
-    print('{0} cells updated for {1}.'.format(result.get('updatedCells'), summary[0][0]))
+    print('{0} cells successfully updated in {1} spreadsheet.'.format(result.get('updatedCells'), summary[0][0]))
