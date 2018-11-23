@@ -86,7 +86,7 @@ if __name__ == '__main__':
     if cmd == 'murl' or cmd == 'aurl':
         ssheetId = extractId(arg)
         config[MONTHLY_ID_KEY if cmd == 'murl' else ANNUAL_ID_KEY] = ssheetId
-        print(("Monthly" if cmd == 'mid' else "Annual") + " Budget Spreadsheet ID:", ssheetId)
+        print(("Monthly" if cmd == 'murl' else "Annual") + " Budget Spreadsheet ID:", ssheetId)
         saveConfig(config)
         sys.exit(0)
 
