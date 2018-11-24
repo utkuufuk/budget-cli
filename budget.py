@@ -24,7 +24,6 @@ COMMANDS = ['mid', 'aid', 'murl', 'aurl', 'summary', 'log', 'sync', 'expense', '
 def saveConfig(config):
     with open(CONFIG_FILE_PATH, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4, ensure_ascii=False)
-    sys.exit(0)
 
 # extracts the ID of a spreadsheet from its URL
 def extractId(url):
@@ -110,8 +109,7 @@ if __name__ == '__main__':
 
     # print monthly budget summary
     if cmd == 'summary':
-        print("\n" + title + "\n=======================")
-        print("Total Expenses:{0:>8s}\nTotal Income:  {1:>8s}".format(summary[14][1], summary[14][7]))
+        print("\n{0}\n================\nExpenses:{1:>7s}\nIncome:{2:>9s}".format(title, summary[14][1], summary[14][7]))
         sys.exit(0)
 
     # log monthly budget transaction history
