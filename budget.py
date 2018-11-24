@@ -49,13 +49,14 @@ def writeCells(service, ssheetId, rangeName, values):
                                                   valueInputOption="USER_ENTERED", body={'values': values}).execute()
 
 # copies monthly budget information to annual budget
-def syncAnnual(service, annualId, sheetName, dictionary, monthCol, numCategories, maxRows):
+def syncAnnual(service, annualId, sheetName, dictionary, title, numCategories, maxRows):
+    print("Synchronizing annual budget with", title, sheetName)
     count = 0
     rangeName = sheetName + '!C4:C' + str(maxRows)
     keys = readCells(service, annualId, rangeName)
     for row in range(0, maxRows):
         if keys[row] and keys[row][0] in dictionary.keys():
-            rangeName = sheetName + '!' + monthCol + str(4 + row)
+            rangeName = sheetName + '!' + MONTH_COLS[title[:3]] + str(4 + row)
             writeCells(service, annualId, rangeName, [[dictionary[keys[row][0]]]])
             count += 1
             if count == numCategories:
@@ -125,11 +126,9 @@ if __name__ == '__main__':
 
     # update annual budget with monthly expenses & income
     if cmd == 'sync':
-        print("Synchronizing annual budget with from ", title, "expenses.")
-        syncAnnual(service, config[ANNUAL_ID_KEY], 'Expenses', expenses, MONTH_COLS[title[:3]],
+        syncAnnual(service, config[ANNUAL_ID_KEY], 'Expenses', expenses, title,
                    config[NUM_EXPENSE_CATEGORIES_KEY], config[MAX_ROWS_KEY])
-        print("Synchronizing annual budget with from ", title, "income.")
-        syncAnnual(service, config[ANNUAL_ID_KEY], 'Income', income, MONTH_COLS[title[:3]],
+        syncAnnual(service, config[ANNUAL_ID_KEY], 'Income', income, title,
                    config[NUM_INCOME_CATEGORIES_KEY], config[MAX_ROWS_KEY])
         print("Annual budget succcessfully synchronized.")
         sys.exit(0)
