@@ -63,7 +63,7 @@ budget aurl <SPREADSHEET_URL>
 # print monthly budget summary
 budget summary
 
-# list all transactions so far in monthly budget
+# log monthly budget transaction history
 budget log
 ```
 
@@ -84,6 +84,6 @@ budget income "<Amount>,<Description>,<Category>"
 
 ### Synchronization
 ``` sh
-# update annual budget spreadsheet with monthly budget expenses & income
+# update annual budget with monthly expenses & income
 budget sync
 ```

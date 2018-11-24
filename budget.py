@@ -16,11 +16,11 @@ ANNUAL_ID_KEY = 'annual-budget-id'
 NUM_EXPENSE_CATEGORIES_KEY = 'num-expense-categories'
 NUM_INCOME_CATEGORIES_KEY = 'num-income-categories'
 MAX_ROWS_KEY = 'max-rows'
-MONTHS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
-          'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
+MONTH_COLS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
+              'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
 COMMANDS = ['mid', 'aid', 'murl', 'aurl', 'summary', 'log', 'sync', 'expense', 'income']
 
-# writes spreadsheet ID to file
+# writes configuration to file
 def saveConfig(config):
     with open(CONFIG_FILE_PATH, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4, ensure_ascii=False)
@@ -68,21 +68,16 @@ def logEntries(entries, header):
         print("{0:>12s} {1:>10s}    {2:<35s} {3:<15s}".format(cols[0], cols[1], cols[2], cols[3]))
 
 if __name__ == '__main__':
-    # validate command
+    # read command, arguments, and configuration
     cmd = sys.argv[1]
-    if cmd not in COMMANDS:
-        print("Invalid command. Valid commands are:", COMMANDS, file=sys.stderr)
-        sys.exit(1)
     arg = None if len(sys.argv) == 2 else sys.argv[2]
-
-    # read configuration file
     try:
         config = json.load(open(CONFIG_FILE_PATH))
     except FileNotFoundError:
         print('Configuration file not found.', file=sys.stderr)
         sys.exit(1)
 
-    # handle 'murl' & 'aurl' commands
+    # set monthly/annual spreadsheet ID by URL
     if cmd == 'murl' or cmd == 'aurl':
         ssheetId = extractId(arg)
         config[MONTHLY_ID_KEY if cmd == 'murl' else ANNUAL_ID_KEY] = ssheetId
@@ -90,7 +85,7 @@ if __name__ == '__main__':
         saveConfig(config)
         sys.exit(0)
 
-    # handle 'mid' & 'aid' commands
+    # print/set monthly/annual spreadsheet ID
     if cmd == 'mid' or cmd == 'aid':
         key = MONTHLY_ID_KEY if cmd == 'mid' else ANNUAL_ID_KEY
         if arg != None:
@@ -107,59 +102,74 @@ if __name__ == '__main__':
     service = build('sheets', 'v4', http=creds.authorize(Http()))
     os.chdir(initialDir)
 
-    # read spreadsheet ID and get date
+    # read Summary page contents of monthly budget spreadsheet
     ssheetId = config[MONTHLY_ID_KEY]
     summary = readCells(service, ssheetId, 'Summary!B8:K' + str(27 + config[NUM_EXPENSE_CATEGORIES_KEY]))
+    title = summary[0][0]
 
-    # handle 'summary' command
+    # print monthly budget summary
     if cmd == 'summary':
-        print("\n" + summary[0][0] + "\n=======================")
+        print("\n" + title + "\n=======================")
         print("Total Expense: {0:>8s}\nTotal Income:  {1:>8s}".format(summary[14][1], summary[14][7]))
         sys.exit(0)
 
-    # handle 'annual' command
-    if cmd == 'sync':
-        monthCol = MONTHS[summary[0][0][:3]]
-        expenses = {summary[row][0]:summary[row][3] for row in range(20, 20 + config[NUM_EXPENSE_CATEGORIES_KEY])}
-        income = {summary[row][6]:summary[row][9] for row in range(20, 20 + config[NUM_INCOME_CATEGORIES_KEY])}
-        print("Synchronizing expenses from", summary[0][0], "with annual budget spreadsheet.")
-        syncAnnual(service, config[ANNUAL_ID_KEY], 'Expenses', expenses, monthCol,
-                   config[NUM_EXPENSE_CATEGORIES_KEY], config[MAX_ROWS_KEY])
-        print("Synchronizing income from", summary[0][0], "with annual budget spreadsheet.")
-        syncAnnual(service, config[ANNUAL_ID_KEY], 'Income', income, monthCol,
-                   config[NUM_INCOME_CATEGORIES_KEY], config[MAX_ROWS_KEY])
-        print("Synchronization successful.")
-        sys.exit(0)
-
-    # get existing expense & income entries
-    expenses = readCells(service, ssheetId, 'Transactions!B5:E' + str(config[MAX_ROWS_KEY]))
-    income = readCells(service, ssheetId, 'Transactions!G5:J' + str(config[MAX_ROWS_KEY]))
-
-    # handle 'log' command
+    # log monthly budget transaction history
     if cmd == 'log':
         logEntries(expenses, "EXPENSES")
         logEntries(income, "INCOME")
         sys.exit(0)
 
-    # remove leading & trailing whitespaces from input parameters if any
-    entry = [e.strip() for e in arg.split(',')]
+    # get the category map of both expenses & income from monthly budget summary
+    expenses = {summary[row][0]:summary[row][3] for row in range(20, 20 + config[NUM_EXPENSE_CATEGORIES_KEY])}
+    income = {summary[row][6]:summary[row][9] for row in range(20, 20 + config[NUM_INCOME_CATEGORIES_KEY])}
 
-    # validate transaction if command is 'expense' or 'income'
-    if len(entry) != 3 and len(entry) != 4:
-        print("Invalid number of fields in transaction.", file=sys.stderr)
-        sys.exit(1)
-    if len(entry) is 3:
-        print("Only 3 fields were specified. Assigning today to date field.")
-        now = datetime.datetime.now()
-        entry.insert(0, str(now)[:10])
+    # update annual budget with monthly expenses & income
+    if cmd == 'sync':
+        print("Synchronizing annual budget with from ", title, "expenses.")
+        syncAnnual(service, config[ANNUAL_ID_KEY], 'Expenses', expenses, MONTH_COLS[title[:3]],
+                   config[NUM_EXPENSE_CATEGORIES_KEY], config[MAX_ROWS_KEY])
+        print("Synchronizing annual budget with from ", title, "income.")
+        syncAnnual(service, config[ANNUAL_ID_KEY], 'Income', income, MONTH_COLS[title[:3]],
+                   config[NUM_INCOME_CATEGORIES_KEY], config[MAX_ROWS_KEY])
+        print("Annual budget succcessfully synchronized.")
+        sys.exit(0)
 
-    # find row index of last transaction
-    values = expenses if cmd == 'expense' else income
-    rowIdx = 5 if not values else 5 + len(values)
+    # insert new transaction
+    if cmd == 'expense' or cmd == 'income':
+        # remove any leading & trailing whitespace from transaction arguments and validate
+        entry = [e.strip() for e in arg.split(',')]
 
-    # add new transaction
-    startCol = "B" if cmd == 'expense' else "G"
-    endCol = "E" if cmd == 'expense' else "J"
-    rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
-    result = writeCells(service, ssheetId, rangeName, [entry])
-    print('{0} cells successfully updated in {1} spreadsheet.'.format(result.get('updatedCells'), summary[0][0]))
+        # validate number of arguments
+        if len(entry) != 3 and len(entry) != 4:
+            print("Invalid number of fields in transaction.", file=sys.stderr)
+            sys.exit(1)
+
+        # automatically assign today if only 3 arguments are specified
+        if len(entry) is 3:
+            print("Only 3 fields were specified. Assigning today to date field.")
+            now = datetime.datetime.now()
+            entry.insert(0, str(now)[:10])
+
+        # reject transaction if the category argument is invalid
+        categories = expenses.keys() if cmd == 'expense' else income.keys()
+        if entry[3] not in categories:
+            print("Invalid category:", entry[3], "\nValid categories are:", file=sys.stderr)
+            for key in categories:
+                print(key)
+            sys.exit(1)
+
+        # find row index of last transaction by reading existing expense/income entries
+        rangeName = 'Transactions!G5:J' if cmd == 'income' else 'Transactions!B5:E'
+        entries = readCells(service, ssheetId, rangeName + str(config[MAX_ROWS_KEY]))
+        rowIdx = 5 if not entries else 5 + len(entries)
+
+        # update cells
+        startCol = "B" if cmd == 'expense' else "G"
+        endCol = "E" if cmd == 'expense' else "J"
+        rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
+        result = writeCells(service, ssheetId, rangeName, [entry])
+        print('{0} cells successfully updated in {1} spreadsheet.'.format(result.get('updatedCells'), title))
+        sys.exit(0)
+
+    # print invalid command error message
+    print("Invalid command. Valid commands are:", COMMANDS, file=sys.stderr)
