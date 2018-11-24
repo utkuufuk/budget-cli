@@ -110,7 +110,7 @@ if __name__ == '__main__':
     # print monthly budget summary
     if cmd == 'summary':
         print("\n" + title + "\n=======================")
-        print("Total Expense: {0:>8s}\nTotal Income:  {1:>8s}".format(summary[14][1], summary[14][7]))
+        print("Total Expenses:{0:>8s}\nTotal Income:  {1:>8s}".format(summary[14][1], summary[14][7]))
         sys.exit(0)
 
     # log monthly budget transaction history
@@ -150,7 +150,12 @@ if __name__ == '__main__':
             now = datetime.datetime.now()
             entry.insert(0, str(now)[:10])
 
-        # reject transaction if the category argument is invalid
+        # reject transaction if amount is invalid
+        if int(entry[1]) <= 0 or int(entry[1]) > 99999:
+            print("Invalid transaction amount:", entry[1], file=sys.stderr)
+            sys.exit(1)
+
+        # reject transaction if category is invalid 
         categories = expenses.keys() if cmd == 'expense' else income.keys()
         if entry[3] not in categories:
             print("Invalid category:", entry[3], "\nValid categories are:", file=sys.stderr)
@@ -171,5 +176,4 @@ if __name__ == '__main__':
         print('{0} cells successfully updated in {1} spreadsheet.'.format(result.get('updatedCells'), title))
         sys.exit(0)
 
-    # print invalid command error message
     print("Invalid command. Valid commands are:", COMMANDS, file=sys.stderr)
