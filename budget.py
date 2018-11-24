@@ -62,7 +62,7 @@ def syncAnnual(service, annualId, sheetName, dictionary, title, numCategories, m
                 break
 
 # prints entries on the terminal as a table
-def logEntries(entries, header):
+def log(entries, header):
     print("\n" + header + ":\n=============================================================================")
     for cols in entries:
         print("{0:>12s} {1:>10s}    {2:<35s} {3:<15s}".format(cols[0], cols[1], cols[2], cols[3]))
@@ -112,26 +112,30 @@ if __name__ == '__main__':
         print("\n{0}\n================\nExpenses:{1:>7s}\nIncome:{2:>9s}".format(title, summary[14][1], summary[14][7]))
         sys.exit(0)
 
-    # log monthly budget transaction history
-    if cmd == 'log':
-        logEntries(expenses, "EXPENSES")
-        logEntries(income, "INCOME")
-        sys.exit(0)
-
     # get the category map of both expenses & income from monthly budget summary
-    expenses = {summary[row][0]:summary[row][3] for row in range(20, 20 + config[NUM_EXPENSE_CATEGORIES_KEY])}
-    income = {summary[row][6]:summary[row][9] for row in range(20, 20 + config[NUM_INCOME_CATEGORIES_KEY])}
+    expenseMap = {summary[row][0]:summary[row][3] for row in range(20, 20 + config[NUM_EXPENSE_CATEGORIES_KEY])}
+    incomeMap = {summary[row][6]:summary[row][9] for row in range(20, 20 + config[NUM_INCOME_CATEGORIES_KEY])}
 
     # update annual budget with monthly expenses & income
     if cmd == 'sync':
-        syncAnnual(service, config[ANNUAL_ID_KEY], 'Expenses', expenses, title,
+        syncAnnual(service, config[ANNUAL_ID_KEY], 'Expenses', expenseMap, title,
                    config[NUM_EXPENSE_CATEGORIES_KEY], config[MAX_ROWS_KEY])
-        syncAnnual(service, config[ANNUAL_ID_KEY], 'Income', income, title,
+        syncAnnual(service, config[ANNUAL_ID_KEY], 'Income', incomeMap, title,
                    config[NUM_INCOME_CATEGORIES_KEY], config[MAX_ROWS_KEY])
         print("Annual budget succcessfully synchronized.")
         sys.exit(0)
 
-    # insert new transaction
+    # read expense & income transactions from monthly budget
+    expenseEntries = readCells(service, ssheetId, 'Transactions!B5:E' + str(config[MAX_ROWS_KEY]))
+    incomeEntries = readCells(service, ssheetId, 'Transactions!G5:J' + str(config[MAX_ROWS_KEY]))
+
+    # log monthly budget expense/income transaction history
+    if cmd == 'log':
+        log(expenseEntries, "EXPENSES")
+        log(incomeEntries, "INCOME")
+        sys.exit(0)
+
+    # insert new expense/income transaction
     if cmd == 'expense' or cmd == 'income':
         # remove any leading & trailing whitespace from transaction arguments and validate
         entry = [e.strip() for e in arg.split(',')]
@@ -157,16 +161,15 @@ if __name__ == '__main__':
             sys.exit(1)
     
         # reject transaction if category is invalid 
-        categories = expenses.keys() if cmd == 'expense' else income.keys()
+        categories = expenseMap.keys() if cmd == 'expense' else incomeMap.keys()
         if entry[3] not in categories:
             print("Invalid category:", entry[3], "\nValid categories are:", file=sys.stderr)
             for key in categories:
                 print(key)
             sys.exit(1)
 
-        # find row index of last transaction by reading existing expense/income entries
-        rangeName = 'Transactions!G5:J' if cmd == 'income' else 'Transactions!B5:E'
-        entries = readCells(service, ssheetId, rangeName + str(config[MAX_ROWS_KEY]))
+        # find row index of last expense/income transaction
+        entries = incomeEntries if cmd == 'income' else expenseEntries
         rowIdx = 5 if not entries else 5 + len(entries)
 
         # update cells
