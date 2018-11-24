@@ -151,10 +151,14 @@ if __name__ == '__main__':
             entry.insert(0, str(now)[:10])
 
         # reject transaction if amount is invalid
-        if int(entry[1]) <= 0 or int(entry[1]) > 99999:
+        try:
+            if int(entry[1]) <= 0 or int(entry[1]) > 99999:
+                print("Invalid transaction amount:", entry[1], file=sys.stderr)
+                sys.exit(1)
+        except ValueError:
             print("Invalid transaction amount:", entry[1], file=sys.stderr)
             sys.exit(1)
-
+    
         # reject transaction if category is invalid 
         categories = expenses.keys() if cmd == 'expense' else income.keys()
         if entry[3] not in categories:
