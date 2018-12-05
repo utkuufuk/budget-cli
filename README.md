@@ -16,25 +16,24 @@ https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 
  2. From project directory:
 ``` sh
+# copies the app script into /usr/bin/
+# copies config.json & token.json into ~/.config/budget-cli/
 ./install.sh
+```
+
+## Update
+From project directory:
+``` sh
+# updates the app script only
+./update.sh
 ```
 
 ## Uninstallation
 From project directory:
 ``` sh
+# removes the app script, config.json & token.json
 ./uninstall.sh
 ```
-
-## Configuration
-The configuration file `~/.config/budget-cli/config.json` is created during installation. You should configure the following parameters before using the app:
-
- * **`num-expense-categories:`** Number of expense categories in monthly budget spreadsheet.
- * **`num-income-categories:`** Number of income categories in monthly budget spreadsheet.
- * **`max-rows:`** Maximum number of rows in any spreadsheet.
-
-#### Important
- * For synchronization, expense/income **categories must be exactly the same** across monthly and annual budget spreadsheets.
- * It is recommended **not to modify** `monthly-budget-id` and `annual-budget-id` manually, since there are dedicated commands for that.
 
 ## Usage
 ### Spreadsheet Selection
@@ -83,6 +82,8 @@ budget income "<Amount>,<Description>,<Category>"
 ```
 
 ### Synchronization
+ For annual synchronization, expense & income categories must be exactly the same across monthly and annual budget spreadsheets.
+
 ``` sh
 # update annual budget with monthly expenses & income
 budget sync

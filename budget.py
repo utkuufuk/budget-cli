@@ -13,7 +13,7 @@ APP_DIR = str(Path.home()) + '/.config/budget-cli/'
 CONFIG_FILE_PATH = APP_DIR + 'config.json'
 MONTHLY_ID_KEY = 'monthly-budget-id'
 ANNUAL_ID_KEY = 'annual-budget-id'
-MAX_ROWS_KEY = 'max-rows'
+MAX_ROWS = 1000
 MONTH_COLS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
               'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
 COMMANDS = ['mid', 'aid', 'murl', 'aurl', 'summary', 'log', 'sync', 'expense', 'income']
@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
     # read Summary page contents of monthly budget spreadsheet & get the number of expense/income categories
     ssheetId = config[MONTHLY_ID_KEY]
-    summary = readCells(service, ssheetId, 'Summary!B8:K' + str(config[MAX_ROWS_KEY]))
+    summary = readCells(service, ssheetId, 'Summary!B8:K' + str(MAX_ROWS))
     title = summary[0][0]
     numExpenseCategories = len(summary) - 20
     numIncomeCategories = len([r for r in range(20, len(summary)) if len(summary[r]) == 10])
@@ -119,14 +119,14 @@ if __name__ == '__main__':
 
     # update annual budget with monthly expenses & income
     if cmd == 'sync':
-        sync(service, config[ANNUAL_ID_KEY], 'Expenses', expenseMap, title, numExpenseCategories, config[MAX_ROWS_KEY])
-        sync(service, config[ANNUAL_ID_KEY], 'Income', incomeMap, title, numIncomeCategories, config[MAX_ROWS_KEY])
+        sync(service, config[ANNUAL_ID_KEY], 'Expenses', expenseMap, title, numExpenseCategories, MAX_ROWS)
+        sync(service, config[ANNUAL_ID_KEY], 'Income', incomeMap, title, numIncomeCategories, MAX_ROWS)
         print("\nAnnual budget succcessfully synchronized.")
         sys.exit(0)
 
     # read expense & income transactions from monthly budget
-    expenseEntries = readCells(service, ssheetId, 'Transactions!B5:E' + str(config[MAX_ROWS_KEY]))
-    incomeEntries = readCells(service, ssheetId, 'Transactions!G5:J' + str(config[MAX_ROWS_KEY]))
+    expenseEntries = readCells(service, ssheetId, 'Transactions!B5:E' + str(MAX_ROWS))
+    incomeEntries = readCells(service, ssheetId, 'Transactions!G5:J' + str(MAX_ROWS))
 
     # log monthly budget expense/income transaction history
     if cmd == 'log':
