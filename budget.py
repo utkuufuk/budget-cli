@@ -48,8 +48,8 @@ def writeCells(service, ssheetId, rangeName, values):
                                                   valueInputOption="USER_ENTERED", body={'values': values}).execute()
 
 # copies monthly budget information to annual budget
-def syncAnnual(service, annualId, sheetName, dictionary, title, numCategories, maxRows):
-    print("Synchronizing annual budget with", title, sheetName)
+def sync(service, annualId, sheetName, dictionary, title, numCategories, maxRows):
+    print("\nSynchronizing annual budget with", title, sheetName + ":\n")
     count = 0
     rangeName = sheetName + '!C4:C' + str(maxRows)
     keys = readCells(service, annualId, rangeName)
@@ -57,6 +57,7 @@ def syncAnnual(service, annualId, sheetName, dictionary, title, numCategories, m
         if keys[row] and keys[row][0] in dictionary.keys():
             rangeName = sheetName + '!' + MONTH_COLS[title[:3]] + str(4 + row)
             writeCells(service, annualId, rangeName, [[dictionary[keys[row][0]]]])
+            print("{0:<22s} {1:>6s}".format(keys[row][0], dictionary[keys[row][0]]))
             count += 1
             if count == numCategories:
                 break
@@ -64,8 +65,8 @@ def syncAnnual(service, annualId, sheetName, dictionary, title, numCategories, m
 # prints entries on the terminal as a table
 def log(entries, header):
     print("\n" + header + ":\n=============================================================================")
-    for cols in entries:
-        print("{0:>12s} {1:>10s}    {2:<35s} {3:<15s}".format(cols[0], cols[1], cols[2], cols[3]))
+    for rows in entries:
+        print("{0:>12s} {1:>10s}    {2:<35s} {3:<15s}".format(rows[0], rows[1], rows[2], rows[3]))
 
 if __name__ == '__main__':
     # read command, arguments, and configuration
@@ -118,11 +119,11 @@ if __name__ == '__main__':
 
     # update annual budget with monthly expenses & income
     if cmd == 'sync':
-        syncAnnual(service, config[ANNUAL_ID_KEY], 'Expenses', expenseMap, title,
-                   config[NUM_EXPENSE_CATEGORIES_KEY], config[MAX_ROWS_KEY])
-        syncAnnual(service, config[ANNUAL_ID_KEY], 'Income', incomeMap, title,
-                   config[NUM_INCOME_CATEGORIES_KEY], config[MAX_ROWS_KEY])
-        print("Annual budget succcessfully synchronized.")
+        sync(service, config[ANNUAL_ID_KEY], 'Expenses', expenseMap, title,
+             config[NUM_EXPENSE_CATEGORIES_KEY], config[MAX_ROWS_KEY])
+        sync(service, config[ANNUAL_ID_KEY], 'Income', incomeMap, title,
+             config[NUM_INCOME_CATEGORIES_KEY], config[MAX_ROWS_KEY])
+        print("\nAnnual budget succcessfully synchronized.")
         sys.exit(0)
 
     # read expense & income transactions from monthly budget
