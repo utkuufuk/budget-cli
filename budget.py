@@ -152,7 +152,7 @@ if __name__ == '__main__':
 
         # reject transaction if amount is invalid
         try:
-            if int(entry[1]) <= 0 or int(entry[1]) > 99999:
+            if float(entry[1]) <= 0 or float(entry[1]) > 99999:
                 print("Invalid transaction amount:", entry[1], file=sys.stderr)
                 sys.exit(1)
         except ValueError:
