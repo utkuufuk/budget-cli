@@ -13,8 +13,6 @@ APP_DIR = str(Path.home()) + '/.config/budget-cli/'
 CONFIG_FILE_PATH = APP_DIR + 'config.json'
 MONTHLY_ID_KEY = 'monthly-budget-id'
 ANNUAL_ID_KEY = 'annual-budget-id'
-NUM_EXPENSE_CATEGORIES_KEY = 'num-expense-categories'
-NUM_INCOME_CATEGORIES_KEY = 'num-income-categories'
 MAX_ROWS_KEY = 'max-rows'
 MONTH_COLS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
               'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
@@ -103,10 +101,12 @@ if __name__ == '__main__':
     service = build('sheets', 'v4', http=creds.authorize(Http()))
     os.chdir(initialDir)
 
-    # read Summary page contents of monthly budget spreadsheet
+    # read Summary page contents of monthly budget spreadsheet & get the number of expense/income categories
     ssheetId = config[MONTHLY_ID_KEY]
-    summary = readCells(service, ssheetId, 'Summary!B8:K' + str(27 + config[NUM_EXPENSE_CATEGORIES_KEY]))
+    summary = readCells(service, ssheetId, 'Summary!B8:K' + str(config[MAX_ROWS_KEY]))
     title = summary[0][0]
+    numExpenseCategories = len(summary) - 20
+    numIncomeCategories = len([r for r in range(20, len(summary)) if len(summary[r]) == 10])
 
     # print monthly budget summary
     if cmd == 'summary':
@@ -114,15 +114,13 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # get the category map of both expenses & income from monthly budget summary
-    expenseMap = {summary[row][0]:summary[row][3] for row in range(20, 20 + config[NUM_EXPENSE_CATEGORIES_KEY])}
-    incomeMap = {summary[row][6]:summary[row][9] for row in range(20, 20 + config[NUM_INCOME_CATEGORIES_KEY])}
+    expenseMap = {summary[row][0]:summary[row][3] for row in range(20, 20 + numExpenseCategories)}
+    incomeMap = {summary[row][6]:summary[row][9] for row in range(20, 20 + numIncomeCategories)}
 
     # update annual budget with monthly expenses & income
     if cmd == 'sync':
-        sync(service, config[ANNUAL_ID_KEY], 'Expenses', expenseMap, title,
-             config[NUM_EXPENSE_CATEGORIES_KEY], config[MAX_ROWS_KEY])
-        sync(service, config[ANNUAL_ID_KEY], 'Income', incomeMap, title,
-             config[NUM_INCOME_CATEGORIES_KEY], config[MAX_ROWS_KEY])
+        sync(service, config[ANNUAL_ID_KEY], 'Expenses', expenseMap, title, numExpenseCategories, config[MAX_ROWS_KEY])
+        sync(service, config[ANNUAL_ID_KEY], 'Income', incomeMap, title, numIncomeCategories, config[MAX_ROWS_KEY])
         print("\nAnnual budget succcessfully synchronized.")
         sys.exit(0)
 
