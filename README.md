@@ -16,22 +16,11 @@ https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 
  2. From project directory:
 ``` sh
-# copies the app script into /usr/bin/
-# copies config.json & token.json into ~/.config/budget-cli/
 ./install.sh
 ```
 
-## Update
-From project directory:
-``` sh
-# updates the app script only
-./update.sh
-```
-
 ## Uninstall
-From project directory:
 ``` sh
-# removes the app script, config.json & token.json
 ./uninstall.sh
 ```
 
