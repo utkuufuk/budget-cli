@@ -11,7 +11,7 @@
 https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ```
 
-## Installation
+## Install
  1. Complete steps 1 & 2 of the [quickstart guide](https://developers.google.com/sheets/api/quickstart/python). Make sure that you copy the **`credentials.json`** file into **project directory.**
 
  2. From project directory:
@@ -28,7 +28,7 @@ From project directory:
 ./update.sh
 ```
 
-## Uninstallation
+## Uninstall
 From project directory:
 ``` sh
 # removes the app script, config.json & token.json
@@ -45,16 +45,16 @@ budget mid
 budget aid
 
 # select monthly spreadsheet by ID
-budget mid <SPREADSHEET_ID>
+budget mid <MONTHLY_SPREADSHEET_ID>
 
 # select annual spreadsheet by ID
-budget aid <SPREADSHEET_ID>
+budget aid <ANNUAL_SPREADSHEET_ID>
 
 # select monthly spreadsheet by URL
-budget murl <SPREADSHEET_URL>
+budget murl <MONTHLY_SPREADSHEET_URL>
 
 # select annual spreadsheet by URL
-budget aurl <SPREADSHEET_URL>
+budget aurl <ANNUAL_SPREADSHEET_URL>
 ```
 
 ### Monitoring
