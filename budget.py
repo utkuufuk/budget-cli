@@ -16,7 +16,7 @@ ANNUAL_ID_KEY = 'annual-budget-id'
 MAX_ROWS = 1000
 MONTH_COLS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
               'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
-COMMANDS = ['mid', 'aid', 'murl', 'aurl', 'summary', 'log', 'sync', 'expense', 'income']
+COMMANDS = ['murl', 'aurl', 'summary', 'categories', 'log', 'sync', 'expense', 'income']
 
 # writes configuration to file
 def saveConfig(config):
@@ -45,6 +45,18 @@ def writeCells(service, ssheetId, rangeName, values):
     return service.spreadsheets().values().update(spreadsheetId=ssheetId, range=rangeName,
                                                   valueInputOption="USER_ENTERED", body={'values': values}).execute()
 
+# gets category maps of both expenses & income from monthly budget summary
+def getCategories(summary):
+    expenseMap = {summary[row][0]:summary[row][3] for row in range(20, 20 + numExpenseCategories)}
+    incomeMap = {summary[row][6]:summary[row][9] for row in range(20, 20 + numIncomeCategories)}
+    return expenseMap, incomeMap
+
+# reads expense & income transactions from monthly budget
+def getEntries(service, ssheetId):
+    expenseEntries = readCells(service, ssheetId, 'Transactions!B5:E' + str(MAX_ROWS))
+    incomeEntries = readCells(service, ssheetId, 'Transactions!G5:J' + str(MAX_ROWS))
+    return expenseEntries, incomeEntries
+
 # copies monthly budget information to annual budget
 def sync(service, annualId, sheetName, dictionary, title, numCategories, maxRows):
     print("\nSynchronizing annual budget with", title, sheetName + ":\n")
@@ -60,11 +72,23 @@ def sync(service, annualId, sheetName, dictionary, title, numCategories, maxRows
             if count == numCategories:
                 break
 
+# lists categories & amounts in a two-column list
+def listCategories(dictionary, header):
+    print("\n" + header + ":\n====================================================================")
+    newline = True
+    for category, amount in dictionary.items():
+        if newline:
+            print("{0:<22s} {1:>6s}          ".format(category, amount), end='')
+            newline = False
+        else:
+            print("{0:<22s} {1:>6s}".format(category, amount))
+            newline = True
+
 # prints entries on the terminal as a table
 def log(entries, header):
-    print("\n" + header + ":\n=============================================================================")
+    print("\n" + header + ":\n===============================================================================")
     for rows in entries:
-        print("{0:>12s} {1:>10s}    {2:<35s} {3:<15s}".format(rows[0], rows[1], rows[2], rows[3]))
+        print("{0:>12s} {1:>12s}    {2:<35s} {3:<15s}".format(rows[0], rows[1], rows[2], rows[3]))
 
 if __name__ == '__main__':
     # read command, arguments, and configuration
@@ -82,15 +106,6 @@ if __name__ == '__main__':
         config[MONTHLY_ID_KEY if cmd == 'murl' else ANNUAL_ID_KEY] = ssheetId
         print(("Monthly" if cmd == 'murl' else "Annual") + " Budget Spreadsheet ID:", ssheetId)
         saveConfig(config)
-        sys.exit(0)
-
-    # print/set monthly/annual spreadsheet ID
-    if cmd == 'mid' or cmd == 'aid':
-        key = MONTHLY_ID_KEY if cmd == 'mid' else ANNUAL_ID_KEY
-        if arg != None:
-            config[key] = arg
-            saveConfig(config)
-        print(("Monthly" if cmd == 'mid' else "Annual") + " Budget Spreadsheet ID:", config[key])
         sys.exit(0)
 
     # temporarily change working directory to read token.json & authorize
@@ -113,25 +128,25 @@ if __name__ == '__main__':
         print("\n{0}\n================\nExpenses:{1:>7s}\nIncome:{2:>9s}".format(title, summary[14][1], summary[14][7]))
         sys.exit(0)
 
-    # get the category map of both expenses & income from monthly budget summary
-    expenseMap = {summary[row][0]:summary[row][3] for row in range(20, 20 + numExpenseCategories)}
-    incomeMap = {summary[row][6]:summary[row][9] for row in range(20, 20 + numIncomeCategories)}
-
-    # update annual budget with monthly expenses & income
-    if cmd == 'sync':
-        sync(service, config[ANNUAL_ID_KEY], 'Expenses', expenseMap, title, numExpenseCategories, MAX_ROWS)
-        sync(service, config[ANNUAL_ID_KEY], 'Income', incomeMap, title, numIncomeCategories, MAX_ROWS)
-        print("\nAnnual budget succcessfully synchronized.")
+    if cmd == 'categories':
+        expenseMap, incomeMap = getCategories(summary)
+        listCategories(expenseMap, "EXPENSES")
+        listCategories(incomeMap, "\nINCOME")
         sys.exit(0)
-
-    # read expense & income transactions from monthly budget
-    expenseEntries = readCells(service, ssheetId, 'Transactions!B5:E' + str(MAX_ROWS))
-    incomeEntries = readCells(service, ssheetId, 'Transactions!G5:J' + str(MAX_ROWS))
 
     # log monthly budget expense/income transaction history
     if cmd == 'log':
+        expenseEntries, incomeEntries = getEntries(service, ssheetId)
         log(expenseEntries, "EXPENSES")
         log(incomeEntries, "INCOME")
+        sys.exit(0)
+
+    # update annual budget with monthly expenses & income
+    if cmd == 'sync':
+        expenseMap, incomeMap = getCategories(summary)
+        sync(service, config[ANNUAL_ID_KEY], 'Expenses', expenseMap, title, numExpenseCategories, MAX_ROWS)
+        sync(service, config[ANNUAL_ID_KEY], 'Income', incomeMap, title, numIncomeCategories, MAX_ROWS)
+        print("\nAnnual budget succcessfully synchronized.")
         sys.exit(0)
 
     # insert new expense/income transaction
@@ -160,6 +175,7 @@ if __name__ == '__main__':
             sys.exit(1)
     
         # reject transaction if category is invalid 
+        expenseMap, incomeMap = getCategories(summary)
         categories = expenseMap.keys() if cmd == 'expense' else incomeMap.keys()
         if entry[3] not in categories:
             print("Invalid category:", entry[3], "\nValid categories are:", file=sys.stderr)
@@ -168,6 +184,7 @@ if __name__ == '__main__':
             sys.exit(1)
 
         # find row index of last expense/income transaction
+        expenseEntries, incomeEntries = getEntries(service, ssheetId)
         entries = incomeEntries if cmd == 'income' else expenseEntries
         rowIdx = 5 if not entries else 5 + len(entries)
 

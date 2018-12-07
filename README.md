@@ -6,7 +6,7 @@
 
  2. Optionally, create an additional *annual budget* spreadsheet if you want to use the synchronization feature.
 
- 3. Take note of the URL or just the **`SPREADSHEET_ID`** from your new spreadsheet(s):
+ 3. Take note of the new spreadsheet URL(s):
 ``` cmd
 https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ```
@@ -27,22 +27,10 @@ https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ## Usage
 ### Spreadsheet Selection
 ``` sh
-# print selected monthly spreadsheet ID
-budget mid
-
-# print selected annual spreadsheet ID
-budget aid
-
-# select monthly spreadsheet by ID
-budget mid <MONTHLY_SPREADSHEET_ID>
-
-# select annual spreadsheet by ID
-budget aid <ANNUAL_SPREADSHEET_ID>
-
-# select monthly spreadsheet by URL
+# set monthly spreadsheet by URL
 budget murl <MONTHLY_SPREADSHEET_URL>
 
-# select annual spreadsheet by URL
+# set annual spreadsheet by URL
 budget aurl <ANNUAL_SPREADSHEET_URL>
 ```
 
@@ -50,6 +38,9 @@ budget aurl <ANNUAL_SPREADSHEET_URL>
 ``` sh
 # print monthly budget summary
 budget summary
+
+# list all monthly budget categories & amounts
+budget categories
 
 # log monthly budget transaction history
 budget log
