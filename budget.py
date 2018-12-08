@@ -30,7 +30,7 @@ def extractId(url):
     if start == -1 or end == -1:
         print("Invalid URL:", url, file=sys.stderr)
         sys.exit(1)
-    return arg[(start + 15):end]
+    return url[(start + 15):end]
 
 # reads MxN cells from a spreadsheet
 def readCells(service, ssheetId, rangeName):
