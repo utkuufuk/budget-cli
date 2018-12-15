@@ -9,7 +9,7 @@ from oauth2client import file
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-APP_DIR = str(Path.home()) + '/.config/budget-cli/'
+APP_DIR = str(Path.home()) + '/.budget-cli/'
 CONFIG_FILE_PATH = APP_DIR + 'config.json'
 MONTHLY_ID_KEY = 'monthly-budget-id'
 ANNUAL_ID_KEY = 'annual-budget-id'
@@ -37,7 +37,8 @@ def readCells(service, ssheetId, rangeName):
     try:
         return service.spreadsheets().values().get(spreadsheetId=ssheetId, range=rangeName).execute().get('values', [])
     except HttpError:
-        print("HTTP Error. Spreadsheet ID might be invalid:", ssheetId, file=sys.stderr)
+        print("Monthly spreadsheet ID might be invalid:", ssheetId, file=sys.stderr)
+        print("Set it using the following command:\nbudget murl <SPREADSHEET_ID>", file=sys.stderr)
         sys.exit(1)
 
 # writes MxN cells into a spreadsheet
@@ -46,7 +47,7 @@ def writeCells(service, ssheetId, rangeName, values):
                                                   valueInputOption="USER_ENTERED", body={'values': values}).execute()
 
 # gets category maps of both expenses & income from monthly budget summary
-def getCategories(summary):
+def getCategories(summary, numExpenseCategories, numIncomeCategories):
     expenseMap = {summary[row][0]:summary[row][3] for row in range(20, 20 + numExpenseCategories)}
     incomeMap = {summary[row][6]:summary[row][9] for row in range(20, 20 + numIncomeCategories)}
     return expenseMap, incomeMap
@@ -90,7 +91,7 @@ def log(entries, header):
     for rows in entries:
         print("{0:>12s} {1:>12s}    {2:<35s} {3:<15s}".format(rows[0], rows[1], rows[2], rows[3]))
 
-if __name__ == '__main__':
+def main():
     # read command, arguments, and configuration
     cmd = sys.argv[1]
     arg = None if len(sys.argv) == 2 else sys.argv[2]
@@ -127,7 +128,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if cmd == 'categories':
-        expenseMap, incomeMap = getCategories(summary)
+        expenseMap, incomeMap = getCategories(summary, numExpenseCategories, numIncomeCategories)
         listCategories(expenseMap, "EXPENSES")
         listCategories(incomeMap, "\nINCOME")
         sys.exit(0)
@@ -195,3 +196,6 @@ if __name__ == '__main__':
         sys.exit(0)
 
     print("Invalid command. Valid commands are:", COMMANDS, file=sys.stderr)
+
+if __name__ == '__main__':
+    main()
