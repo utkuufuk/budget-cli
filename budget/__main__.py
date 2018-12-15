@@ -174,7 +174,7 @@ def main():
             sys.exit(1)
     
         # reject transaction if category is invalid 
-        expenseMap, incomeMap = getCategories(summary)
+        expenseMap, incomeMap = getCategories(summary, numExpenseCategories, numIncomeCategories)
         categories = expenseMap.keys() if cmd == 'expense' else incomeMap.keys()
         if entry[3] not in categories:
             print("Invalid category:", entry[3], "\nValid categories are:", file=sys.stderr)
