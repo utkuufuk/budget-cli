@@ -108,7 +108,7 @@ if __name__ == '__main__':
         saveConfig(config)
         sys.exit(0)
 
-    # temporarily change working directory to read token.json & authorize
+    # change working directory to read token.json & authorize
     os.chdir(APP_DIR)
     store = file.Storage('token.json')
     creds = store.get()
