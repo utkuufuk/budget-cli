@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
+import os
+import sys
+import json
+import datetime
+from pathlib import Path
+from httplib2 import Http
+from oauth2client import file
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from httplib2 import Http
-from oauth2client import file, client, tools
-from pathlib import Path
-import sys
-import os
-import datetime
-import json
 
 APP_DIR = str(Path.home()) + '/.config/budget-cli/'
 CONFIG_FILE_PATH = APP_DIR + 'config.json'
@@ -101,7 +101,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # set monthly/annual spreadsheet ID by URL
-    if cmd == 'murl' or cmd == 'aurl':
+    if cmd in ('murl', 'aurl'):
         ssheetId = extractId(arg)
         config[MONTHLY_ID_KEY if cmd == 'murl' else ANNUAL_ID_KEY] = ssheetId
         print(("Monthly" if cmd == 'murl' else "Annual") + " Budget Spreadsheet ID:", ssheetId)
@@ -109,12 +109,10 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # temporarily change working directory to read token.json & authorize
-    initialDir = os.getcwd()
     os.chdir(APP_DIR)
     store = file.Storage('token.json')
     creds = store.get()
     service = build('sheets', 'v4', http=creds.authorize(Http()))
-    os.chdir(initialDir)
 
     # read Summary page contents of monthly budget spreadsheet & get the number of expense/income categories
     ssheetId = config[MONTHLY_ID_KEY]
@@ -150,7 +148,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # insert new expense/income transaction
-    if cmd == 'expense' or cmd == 'income':
+    if cmd in ('expense', 'income'):
         # remove any leading & trailing whitespace from transaction arguments and validate
         entry = [e.strip() for e in arg.split(',')]
 
