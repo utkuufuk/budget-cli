@@ -18,6 +18,8 @@ https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ``` sh
 ./install.sh
 ```
+ 
+ 3. Make sure to [select monthly (and annual) spreadsheet(s)](#spreadsheet-selection) before using other commands.
 
 ## Uninstall
 ``` sh
