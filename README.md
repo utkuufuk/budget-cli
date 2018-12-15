@@ -1,4 +1,8 @@
 # budget-cli
+ * **insert transaction entries**
+ * **view transaction logs & summary**
+ * **synchronize with annual budget**
+
 ![Demo](demo.gif)
 
 ## Preliminaries
