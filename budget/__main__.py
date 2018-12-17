@@ -142,7 +142,7 @@ def main():
 
     # update annual budget with monthly expenses & income
     if cmd == 'sync':
-        expenseMap, incomeMap = getCategories(summary)
+        expenseMap, incomeMap = getCategories(summary, numExpenseCategories, numIncomeCategories)
         sync(service, config[ANNUAL_ID_KEY], 'Expenses', expenseMap, title, numExpenseCategories, MAX_ROWS)
         sync(service, config[ANNUAL_ID_KEY], 'Income', incomeMap, title, numIncomeCategories, MAX_ROWS)
         print("\nAnnual budget succcessfully synchronized.")
