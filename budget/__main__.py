@@ -19,9 +19,9 @@ NUM_TRANSACTION_FIELDS = 4
 FIRST_TRANSACTION_ROW = 5
 MONTH_COLS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
               'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
-COMMANDS = ['murl', 'aurl', 'summary', 'categories', 'log', 'sync', 'expense', 'income']
+COMMAND_SET = ['murl', 'aurl', 'summary', 'categories', 'log', 'sync', 'expense', 'income']
 
-Summary = namedtuple('Summary', 'cells, title, expenseCategories, incomeCategories')
+Summary = namedtuple('Summary', 'cells, title, categories')
 Arguments = namedtuple('Arguments', 'command, params, monthlySheetId, annualSheetId')
 
 # extracts the ID of a spreadsheet from its URL
@@ -76,22 +76,21 @@ def isValid(transaction, categories):
         return False
     return True
 
-# copies monthly budget information to annual budget
-def sync(service, annualId, sheetName, summary):
-    categories = summary.expenseCategories if sheetName == "Expenses" else summary.incomeCategories
+# synchronizes annual budget with monthly budget data
+def sync(service, ssheetId, sheetName, title, categories):
     rangeName = sheetName + '!C4:C' + str(MAX_ROWS)
-    keys = readCells(service, annualId, rangeName)
+    keys = readCells(service, ssheetId, rangeName)
     count = 0
-    print("\nSynchronizing annual budget with", summary.title, sheetName + ":\n")
+    print("\nSynchronizing annual budget with", title, sheetName + ":\n")
     for row in range(0, MAX_ROWS):
         if keys[row] and keys[row][0] in categories.keys():
-            rangeName = sheetName + '!' + MONTH_COLS[summary.title[:3]] + str(4 + row)
-            writeCells(service, annualId, rangeName, [[categories[keys[row][0]]]])
+            rangeName = sheetName + '!' + MONTH_COLS[title[:3]] + str(4 + row)
+            writeCells(service, ssheetId, rangeName, [[categories[keys[row][0]]]])
             print("{0:<22s} {1:>6s}".format(keys[row][0], categories[keys[row][0]]))
             count += 1
             if count == len(categories):
                 break
-    print("\n{0} succcessfully synchronized in annual budget.".format(summary.title))
+    print("\n{0} succcessfully synchronized in annual budget.".format(title))
 
 # lists categories & amounts in a two-column list
 def listCategories(dictionary, header):
@@ -115,10 +114,10 @@ def printHeader(title, length):
 # reads Summary page of the monthly budget & get the number of expense/income categories
 def readSummaryPage(service, ssheetId):
     cells = readCells(service, ssheetId, 'Summary!B8:K' + str(MAX_ROWS))
-    expenseCategories = {cells[row][0]:cells[row][3] for row in range(20, len(cells))}
     numIncomeCategories = len([r for r in range(20, len(cells)) if len(cells[r]) == 10])
     incomeCategories = {cells[row][6]:cells[row][9] for row in range(20, 20 + numIncomeCategories)}
-    return Summary(cells, cells[0][0], expenseCategories, incomeCategories)
+    expenseCategories = {cells[row][0]:cells[row][3] for row in range(20, len(cells))}
+    return Summary(cells, cells[0][0], {'income':incomeCategories, 'expense':expenseCategories})
 
 # prints entries on the terminal as a table
 def logTransactions(entries, header):
@@ -174,24 +173,23 @@ def main():
         printHeader(summary.title, 16)
         print("Expenses:{0:>7s}\nIncome:{1:>9s}".format(summary.cells[14][1], summary.cells[14][7]))
     elif args.command == 'categories':
-        listCategories(summary.expenseCategories, "EXPENSES")
-        listCategories(summary.incomeCategories, "INCOME")
+        listCategories(summary.categories['expense'], "EXPENSES")
+        listCategories(summary.categories['income'], "INCOME")
     elif args.command == 'sync':
-        sync(service, args.annualSheetId, 'Expenses', summary)
-        sync(service, args.annualSheetId, 'Income', summary)
+        sync(service, args.annualSheetId, 'Expenses', summary.title, summary.categories['expense'])
+        sync(service, args.annualSheetId, 'Income', summary.title, summary.categories['income'])
     elif args.command in ('expense', 'income'):
         transaction = [e.strip() for e in args.params.split(',')]
         if len(transaction) is 3:
             print("Only 3 fields were specified. Assigning today to date field.")
             transaction.insert(0, str(datetime.now())[:10])
-        cats = summary.expenseCategories if args.command == 'expense' else summary.incomeCategories
-        if isValid(transaction, cats):
+        if isValid(transaction, summary.categories[args.command]):
             transactions = readTransactions(service, args.monthlySheetId, args.command)
             rowIdx = FIRST_TRANSACTION_ROW + (0 if not transactions else len(transactions))
             insertTransaction(transaction, args.command, service, args.monthlySheetId, rowIdx)
             print('Transaction inserted in {0} budget:\n{1}'.format(summary.title, transaction))
     else:
-        print("Invalid command. Valid commands are:", COMMANDS, file=sys.stderr)
+        print("Invalid command. Valid commands are:", COMMAND_SET, file=sys.stderr)
 
 if __name__ == '__main__':
     main()
