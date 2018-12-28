@@ -2,10 +2,11 @@
 import os
 import sys
 import json
-import datetime
 from pathlib import Path
 from httplib2 import Http
+from datetime import datetime
 from oauth2client import file
+from collections import namedtuple
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -14,20 +15,14 @@ CONFIG_FILE_PATH = APP_DIR + 'config.json'
 MONTHLY_ID_KEY = 'monthly-budget-id'
 ANNUAL_ID_KEY = 'annual-budget-id'
 MAX_ROWS = 1000
+NUM_TRANSACTION_FIELDS = 4
+FIRST_TRANSACTION_ROW = 5
 MONTH_COLS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
               'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
 COMMANDS = ['murl', 'aurl', 'summary', 'categories', 'log', 'sync', 'expense', 'income']
 
-# prints the header followed by a dash with desired length
-def printHeader(title, length):
-    print("\n" + title)
-    for i in range(0, length):
-        print("=") if i == length - 1 else print("=", end="")
-
-# writes configuration to file
-def saveConfig(config):
-    with open(CONFIG_FILE_PATH, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=4, ensure_ascii=False)
+Summary = namedtuple('Summary', 'cells, title, expenseCategories, incomeCategories')
+Arguments = namedtuple('Arguments', 'command, params, monthlySheetId, annualSheetId')
 
 # extracts the ID of a spreadsheet from its URL
 def extractId(url):
@@ -54,32 +49,50 @@ def writeCells(service, ssheetId, rangeName, values):
         spreadsheetId=ssheetId, range=rangeName,
         valueInputOption="USER_ENTERED", body=body).execute()
 
-# gets category maps of both expenses & income from monthly budget summary
-def getCategories(summary, numExpenseCategories, numIncomeCategories):
-    expenseMap = {summary[row][0]:summary[row][3] for row in range(20, 20 + numExpenseCategories)}
-    incomeMap = {summary[row][6]:summary[row][9] for row in range(20, 20 + numIncomeCategories)}
-    return expenseMap, incomeMap
+# inserts a new expense/income transaction to monthly budget spreadsheet
+def insertTransaction(transaction, command, service, ssheetId, rowIdx):
+    startCol = "B" if command == 'expense' else "G"
+    endCol = "E" if command == 'expense' else "J"
+    rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
+    return writeCells(service, ssheetId, rangeName, [transaction])
 
-# reads expense & income transactions from monthly budget
-def getEntries(service, ssheetId):
-    expenseEntries = readCells(service, ssheetId, 'Transactions!B5:E' + str(MAX_ROWS))
-    incomeEntries = readCells(service, ssheetId, 'Transactions!G5:J' + str(MAX_ROWS))
-    return expenseEntries, incomeEntries
+# checks if the input transaction is valid or not
+def isValid(transaction, categories):
+    try:
+        if len(transaction) != NUM_TRANSACTION_FIELDS:
+            raise UserWarning("Invalid number of fields in transaction.")
+        try:
+            if float(transaction[1]) <= 0 or float(transaction[1]) > 99999:
+                raise UserWarning("Invalid transaction amount: {0}".format(transaction[1]))
+        except ValueError as e:
+                raise UserWarning("Invalid transaction amount: {0}".format(transaction[1]))
+        if transaction[3] not in categories.keys():
+            message = "Invalid category: {0}. Valid categories are:".format(transaction[3])
+            for key in categories:
+                message += "\n" + key
+            raise UserWarning(message)
+    except UserWarning as e:
+        print(str(e), "\n", file=sys.stderr)
+        return False
+    return True
 
 # copies monthly budget information to annual budget
-def sync(service, annualId, sheetName, dictionary, title, numCategories):
-    print("\nSynchronizing annual budget with", title, sheetName + ":\n")
-    count = 0
+def sync(service, annualId, sheetName, summary):
+    categories = summary.expenseCategories if sheetName == "Expenses" else summary.incomeCategories
     rangeName = sheetName + '!C4:C' + str(MAX_ROWS)
     keys = readCells(service, annualId, rangeName)
+    count = 0
+    print("\nSynchronizing annual budget with", summary.title, sheetName + ":\n")
     for row in range(0, MAX_ROWS):
-        if keys[row] and keys[row][0] in dictionary.keys():
-            rangeName = sheetName + '!' + MONTH_COLS[title[:3]] + str(4 + row)
-            writeCells(service, annualId, rangeName, [[dictionary[keys[row][0]]]])
-            print("{0:<22s} {1:>6s}".format(keys[row][0], dictionary[keys[row][0]]))
+        if keys[row] and keys[row][0] in categories.keys():
+            rangeName = sheetName + '!' + MONTH_COLS[summary.title[:3]] + str(4 + row)
+            writeCells(service, annualId, rangeName, [[categories[keys[row][0]]]])
+            print("{0:<22s} {1:>6s}".format(keys[row][0], categories[keys[row][0]]))
             count += 1
-            if count == numCategories:
+            if count == len(categories):
                 break
+    print("\n{0} succcessfully synchronized in annual budget.".format(summary.title))
+
 # lists categories & amounts in a two-column list
 def listCategories(dictionary, header):
     printHeader(header, 68)
@@ -91,117 +104,94 @@ def listCategories(dictionary, header):
         else:
             print("{0:<22s} {1:>6s}".format(category, amount))
             newline = True
+    print()
+
+# prints the header followed by a dash with desired length
+def printHeader(title, length):
+    print("\n" + title)
+    for i in range(0, length):
+        print("=") if i == length - 1 else print("=", end="")
+
+# reads Summary page of the monthly budget & get the number of expense/income categories
+def readSummaryPage(service, ssheetId):
+    cells = readCells(service, ssheetId, 'Summary!B8:K' + str(MAX_ROWS))
+    expenseCategories = {cells[row][0]:cells[row][3] for row in range(20, len(cells))}
+    numIncomeCategories = len([r for r in range(20, len(cells)) if len(cells[r]) == 10])
+    incomeCategories = {cells[row][6]:cells[row][9] for row in range(20, 20 + numIncomeCategories)}
+    return Summary(cells, cells[0][0], expenseCategories, incomeCategories)
+
 # prints entries on the terminal as a table
-def log(entries, header):
+def logTransactions(entries, header):
     printHeader(header, 79)
     for rows in entries:
         print("{0:>12s} {1:>12s}    {2:<35s} {3:<15s}".format(rows[0], rows[1], rows[2], rows[3]))
 
-def main():
-    # read command, arguments, and configuration
-    cmd = sys.argv[1]
-    arg = None if len(sys.argv) == 2 else sys.argv[2]
-    try:
-        config = json.load(open(CONFIG_FILE_PATH))
-    except FileNotFoundError:
-        print('Configuration file not found.', file=sys.stderr)
-        sys.exit(1)
+# reads expense & income transactions from monthly budget
+def readTransactions(service, ssheetId, type):
+    rangeName = ('Transactions!B5:E' if type == "expense" else 'Transactions!G5:J') + str(MAX_ROWS)
+    return readCells(service, ssheetId, rangeName)
 
-    # set monthly/annual spreadsheet ID by URL
-    if cmd in ('murl', 'aurl'):
-        ssheetId = extractId(arg)
-        config[MONTHLY_ID_KEY if cmd == 'murl' else ANNUAL_ID_KEY] = ssheetId
-        print(("Monthly" if cmd == 'murl' else "Annual") + " Budget Spreadsheet ID:", ssheetId)
-        saveConfig(config)
-        sys.exit(0)
-
-    # change working directory to read token.json & authorize
+# authorize & build spreadsheet service
+def getSheetService():
     os.chdir(APP_DIR)
     store = file.Storage('token.json')
     creds = store.get()
-    service = build('sheets', 'v4', http=creds.authorize(Http())).spreadsheets().values()
+    return build('sheets', 'v4', http=creds.authorize(Http())).spreadsheets().values()
 
-    # read Summary page of the monthly budget & get the number of expense/income categories
-    ssheetId = config[MONTHLY_ID_KEY]
-    summary = readCells(service, ssheetId, 'Summary!B8:K' + str(MAX_ROWS))
-    title = summary[0][0]
-    numExpenseCategories = len(summary) - 20
-    numIncomeCategories = len([r for r in range(20, len(summary)) if len(summary[r]) == 10])
-    # print monthly budget summary
-    if cmd == 'summary':
-        printHeader(title, 16)
-        print("Expenses:{0:>7s}\nIncome:{1:>9s}".format(summary[14][1], summary[14][7]))
-        sys.exit(0)
+# save monthly/annual spreadsheet ID in configuration file
+def setSheetId(args):
+    ssheetId = extractId(args.params)
+    config = {MONTHLY_ID_KEY: args.monthlySheetId, ANNUAL_ID_KEY: args.annualSheetId}
+    config[MONTHLY_ID_KEY if args.command == 'murl' else ANNUAL_ID_KEY] = ssheetId
+    print(("Monthly" if args.command == 'murl' else "Annual") + " Budget Spreadsheet ID:", ssheetId)
+    with open(CONFIG_FILE_PATH, 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=4, ensure_ascii=False)
 
-    if cmd == 'categories':
-        expenseMap, incomeMap = getCategories(summary, numExpenseCategories, numIncomeCategories)
-        listCategories(expenseMap, "EXPENSES")
-        listCategories(incomeMap, "\nINCOME")
-        sys.exit(0)
+# reads program arguments & configuration
+def readArgs():
+    try:
+        params = None if len(sys.argv) == 2 else sys.argv[2]
+        config = json.load(open(CONFIG_FILE_PATH))
+        return Arguments(sys.argv[1], params, config[MONTHLY_ID_KEY], config[ANNUAL_ID_KEY])
+    except FileNotFoundError:
+        print('Configuration file moved or deleted: {0}'.format(CONFIG_FILE_PATH), file=sys.stderr)
+        sys.exit(1)
 
-    # log monthly budget expense/income transaction history
-    if cmd == 'log':
-        expenseEntries, incomeEntries = getEntries(service, ssheetId)
-        log(expenseEntries, "EXPENSES")
-        log(incomeEntries, "INCOME")
-        sys.exit(0)
-
-    # update annual budget with monthly expenses & income
-    if cmd == 'sync':
-        expenseMap, incomeMap = getCategories(summary, numExpenseCategories, numIncomeCategories)
-        sync(service, config[ANNUAL_ID_KEY], 'Expenses', expenseMap, title, numExpenseCategories)
-        sync(service, config[ANNUAL_ID_KEY], 'Income', incomeMap, title, numIncomeCategories)
-        print("\nAnnual budget succcessfully synchronized.")
-        sys.exit(0)
-
-    # insert new expense/income transaction
-    if cmd in ('expense', 'income'):
-        # remove any leading & trailing whitespace from transaction arguments and validate
-        entry = [e.strip() for e in arg.split(',')]
-
-        # validate number of arguments
-        if len(entry) != 3 and len(entry) != 4:
-            print("Invalid number of fields in transaction.", file=sys.stderr)
-            sys.exit(1)
-
-        # automatically assign today if only 3 arguments are specified
-        if len(entry) is 3:
+def main():
+    args = readArgs()
+    if args.command in ('murl', 'aurl'):
+        setSheetId(args)
+        return
+    service = getSheetService()
+    if args.command == 'log':
+        expenses = readTransactions(service, args.monthlySheetId, "expense")
+        income = readTransactions(service, args.monthlySheetId, "income")
+        logTransactions(expenses, "EXPENSES")
+        logTransactions(income, "INCOME")
+        return
+    summary = readSummaryPage(service, args.monthlySheetId)
+    if args.command == 'summary':
+        printHeader(summary.title, 16)
+        print("Expenses:{0:>7s}\nIncome:{1:>9s}".format(summary.cells[14][1], summary.cells[14][7]))
+    elif args.command == 'categories':
+        listCategories(summary.expenseCategories, "EXPENSES")
+        listCategories(summary.incomeCategories, "INCOME")
+    elif args.command == 'sync':
+        sync(service, args.annualSheetId, 'Expenses', summary)
+        sync(service, args.annualSheetId, 'Income', summary)
+    elif args.command in ('expense', 'income'):
+        transaction = [e.strip() for e in args.params.split(',')]
+        if len(transaction) is 3:
             print("Only 3 fields were specified. Assigning today to date field.")
-            now = datetime.datetime.now()
-            entry.insert(0, str(now)[:10])
-
-        # reject transaction if amount is invalid
-        try:
-            if float(entry[1]) <= 0 or float(entry[1]) > 99999:
-                print("Invalid transaction amount:", entry[1], file=sys.stderr)
-                sys.exit(1)
-        except ValueError:
-            print("Invalid transaction amount:", entry[1], file=sys.stderr)
-            sys.exit(1)
-    
-        # reject transaction if category is invalid 
-        expenseMap, incomeMap = getCategories(summary, numExpenseCategories, numIncomeCategories)
-        categories = expenseMap.keys() if cmd == 'expense' else incomeMap.keys()
-        if entry[3] not in categories:
-            print("Invalid category:", entry[3], "\nValid categories are:", file=sys.stderr)
-            for key in categories:
-                print(key)
-            sys.exit(1)
-
-        # find row index of last expense/income transaction
-        expenseEntries, incomeEntries = getEntries(service, ssheetId)
-        entries = incomeEntries if cmd == 'income' else expenseEntries
-        rowIdx = 5 if not entries else 5 + len(entries)
-
-        # update cells
-        startCol = "B" if cmd == 'expense' else "G"
-        endCol = "E" if cmd == 'expense' else "J"
-        rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
-        result = writeCells(service, ssheetId, rangeName, [entry])
-        print('{0} cells updated in {1} spreadsheet.'.format(result.get('updatedCells'), title))
-        sys.exit(0)
-
-    print("Invalid command. Valid commands are:", COMMANDS, file=sys.stderr)
+            transaction.insert(0, str(datetime.now())[:10])
+        cats = summary.expenseCategories if args.command == 'expense' else summary.incomeCategories
+        if isValid(transaction, cats):
+            transactions = readTransactions(service, args.monthlySheetId, args.command)
+            rowIdx = FIRST_TRANSACTION_ROW + (0 if not transactions else len(transactions))
+            insertTransaction(transaction, args.command, service, args.monthlySheetId, rowIdx)
+            print('Transaction inserted in {0} budget:\n{1}'.format(summary.title, transaction))
+    else:
+        print("Invalid command. Valid commands are:", COMMANDS, file=sys.stderr)
 
 if __name__ == '__main__':
     main()
