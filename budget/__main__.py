@@ -165,7 +165,7 @@ def getMonthlySheetId(date, sheetIds):
 # reads program arguments
 def readArgs():
     if sys.argv[1] not in COMMAND_SET:
-        raise UserWarning("Invalid command. Valid commands are:", COMMAND_SET)
+        raise UserWarning("Invalid command. Valid commands are:\n{0}".format(COMMAND_SET))
     elif sys.argv[1] in ('income', 'expense'):
         if len(sys.argv) != 3:
             raise UserWarning("Missing transaction parameters for '{0}' command.".format(sys.argv[1]))
