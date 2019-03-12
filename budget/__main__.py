@@ -193,21 +193,28 @@ def main():
             transaction[0] = str(transaction[0])[:10]
             insertTransaction(transaction, service, command, monthlySheetId, summary.title)
             return
+        if command == 'summary':
+            printHeader("|  {0:<9} |  Expenses  |  Income   |".format("Month"), 39)
+            for month in MONTH_COLS.keys():
+                if len(sys.argv) > 2 and sys.argv[2] != month.lower():
+                    continue
+                summary = readSummaryPage(service, sheetIds[month.lower()])
+                row = "|  {0:<9} |  {1:<8s}  |  {2:<8s} |"
+                print(row.format(summary.title.split(" ")[0], summary.cells[14][1], summary.cells[14][7]))
+                if datetime.now().strftime("%b") == month:
+                    break
+            return
         monthlySheetId = sheetIds[param]
         if command == 'log':
             expenses = readTransactions(service, monthlySheetId, "expense")
             income = readTransactions(service, monthlySheetId, "income")
-            logTransactions(expenses, "EXPENSES")
-            logTransactions(income, "INCOME")
+            logTransactions(expenses, "{0} Expense Log".format(param.capitalize()))
+            logTransactions(income, "{0} Income Log".format(param.capitalize()))
             return
         summary = readSummaryPage(service, monthlySheetId)
-        if command == 'summary':
-            printHeader("|  {0:<9} |  Expenses  |  Income   |".format("Month"), 39)
-            row = "|  {0:<9} |  {1:<8s}  |  {2:<8s} |"
-            print(row.format(summary.title.split(" ")[0], summary.cells[14][1], summary.cells[14][7]))
-        elif command == 'categories':
-            listCategories(summary.categories.expense, "EXPENSES")
-            listCategories(summary.categories.income, "INCOME")
+        if command == 'categories':
+            listCategories(summary.categories.expense, "{0} Expenses by Category".format(param.capitalize()))
+            listCategories(summary.categories.income, "{0} Income by Category".format(param.capitalize()))
         elif command == 'sync':
             sync(service, sheetIds[ANNUAL_ID_KEY], 'Expenses', summary.title, summary.categories.expense)
             sync(service, sheetIds[ANNUAL_ID_KEY], 'Income', summary.title, summary.categories.income)

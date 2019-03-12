@@ -53,7 +53,7 @@ budget income "3000, Salary, Paycheck"
 
 ### Summary
 ``` sh
-# print monthly budget summary for this month
+# print monthly budget summary for this & earlier months
 budget summary
 
 # print monthly budget summary for January
