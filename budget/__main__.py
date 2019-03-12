@@ -5,10 +5,10 @@ import json
 from pathlib import Path
 from httplib2 import Http
 from datetime import datetime
-from oauth2client import file
 from collections import namedtuple
-from googleapiclient.discovery import build
+from oauth2client import file
 from googleapiclient.errors import HttpError
+from googleapiclient.discovery import build
 
 APP_DIR = str(Path.home()) + '/.budget-cli/'
 CONFIG_FILE_PATH = APP_DIR + 'config.json'
@@ -202,8 +202,9 @@ def main():
             return
         summary = readSummaryPage(service, monthlySheetId)
         if command == 'summary':
-            printHeader(summary.title, 16)
-            print("Expenses:{0:>7s}\nIncome:{1:>9s}".format(summary.cells[14][1], summary.cells[14][7]))
+            printHeader("|  {0:<9} |  Expenses  |  Income   |".format("Month"), 39)
+            row = "|  {0:<9} |  {1:<8s}  |  {2:<8s} |"
+            print(row.format(summary.title.split(" ")[0], summary.cells[14][1], summary.cells[14][7]))
         elif command == 'categories':
             listCategories(summary.categories.expense, "EXPENSES")
             listCategories(summary.categories.income, "INCOME")

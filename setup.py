@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='budget',
-    version='1.0.1',
+    version='1.0.2',
     packages=['budget'],
     entry_points={
         'console_scripts': [
