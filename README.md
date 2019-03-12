@@ -39,16 +39,16 @@ https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ### Transaction Entry
 ``` sh
 # append expense for custom date
-budget expense "Jun 9, 40, Pizza, Food"
+budget expense "Jun 29, 40, Pizza, Food"
 
 # append expense for today
 budget expense "40, Pizza, Food"
 
 # append income for custom date
-budget income "Aug 2, 3000, Paycheck
+budget income "Aug 2, 3000, Salary, Paycheck"
 
 # append income for today
-budget income "<Amount>,<Description>,<Category>"
+budget income "3000, Salary, Paycheck"
 ```
 
 ### Summary
