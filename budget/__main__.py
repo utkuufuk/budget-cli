@@ -12,19 +12,16 @@ from googleapiclient.errors import HttpError
 
 APP_DIR = str(Path.home()) + '/.budget-cli/'
 CONFIG_FILE_PATH = APP_DIR + 'config.json'
-MONTHLY_ID_KEY = 'monthly-budget-id'
-ANNUAL_ID_KEY = 'annual-budget-id'
+ANNUAL_ID_KEY = 'annual'
 MAX_ROWS = 1000
 NUM_TRANSACTION_FIELDS = 4
 FIRST_TRANSACTION_ROW = 5
 MONTH_COLS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
               'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
-COMMAND_SET = ['murl', 'aurl', 'summary', 'categories', 'log', 'sync', 'expense', 'income']
+COMMAND_SET = ['summary', 'categories', 'log', 'sync', 'expense', 'income']
 
 Categories = namedtuple('Categories', 'expense, income')
 Summary = namedtuple('Summary', 'cells, title, categories')
-SheetId = namedtuple('SheetId', 'monthly, annual')
-Arguments = namedtuple('Arguments', 'command, params, ssheetId')
 
 # extracts the ID of a spreadsheet from its URL
 def extractId(url):
@@ -40,9 +37,8 @@ def readCells(service, ssheetId, rangeName):
     try:
         return service.get(spreadsheetId=ssheetId, range=rangeName).execute().get('values', [])
     except HttpError:
-        print("Monthly spreadsheet ID might be invalid:", ssheetId, file=sys.stderr)
-        print("Set it using the following command:\nbudget murl <SPREADSHEET_ID>", file=sys.stderr)
-        sys.exit(1)
+        error = "Monthly budget spreadsheet ID might be invalid. Check config file: {0}"
+        raise UserWarning(error.format(CONFIG_FILE_PATH))
 
 # writes MxN cells into a spreadsheet
 def writeCells(service, ssheetId, rangeName, values):
@@ -52,41 +48,37 @@ def writeCells(service, ssheetId, rangeName, values):
         valueInputOption="USER_ENTERED", body=body).execute()
 
 # inserts a new expense/income transaction to monthly budget spreadsheet
-def insertTransaction(transaction, service, args, title):
-    transactions = readTransactions(service, args.ssheetId.monthly, args.command)
+def insertTransaction(transaction, service, command, monthlySheetId, title):
+    transactions = readTransactions(service, monthlySheetId, command)
     rowIdx = FIRST_TRANSACTION_ROW + (0 if not transactions else len(transactions))
-    startCol = "B" if args.command == 'expense' else "G"
-    endCol = "E" if args.command == 'expense' else "J"
+    startCol = "B" if command == 'expense' else "G"
+    endCol = "E" if command == 'expense' else "J"
     rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
-    writeCells(service, args.ssheetId.monthly, rangeName, [transaction])
+    writeCells(service, monthlySheetId, rangeName, [transaction])
     print('Transaction inserted in {0} budget:\n{1}'.format(title, transaction))
 
-# checks if the input transaction is valid or not
-def isValid(transaction, categories):
-    try:
-        if len(transaction) != NUM_TRANSACTION_FIELDS:
-            raise UserWarning("Invalid number of fields in transaction.")
-        try:
-            if float(transaction[1]) <= 0 or float(transaction[1]) > 99999:
-                raise UserWarning("Invalid transaction amount: {0}".format(transaction[1]))
-        except ValueError as e:
-                raise UserWarning("Invalid transaction amount: {0}".format(transaction[1]))
-        if transaction[3] not in categories.keys():
-            message = "Invalid category: {0}. Valid categories are:".format(transaction[3])
-            for key in categories:
-                message += "\n" + key
-            raise UserWarning(message)
-    except UserWarning as e:
-        print(str(e), "\n", file=sys.stderr)
-        return False
-    return True
+# raises a UserWarning if the transaction is invalid
+def validate(transaction, categories):
+    if transaction[3] not in categories.keys():
+        message = "Invalid category: {0}. Valid categories are:".format(transaction[3])
+        for key in categories:
+            message += "\n" + key
+        raise UserWarning(message)
 
 # parses transaction fields & inserts a date field (today) if not specified
 def parseTransaction(params):
     transaction = [e.strip() for e in params.split(',')]
-    if len(transaction) is 3:
+    if len(transaction) is NUM_TRANSACTION_FIELDS - 1:
         print("Only 3 fields were specified. Assigning today to date field.")
-        transaction.insert(0, str(datetime.now())[:10])
+        #transaction.insert(0, str(datetime.now())[:10])
+        transaction.insert(0, datetime.now())
+    if len(transaction) != NUM_TRANSACTION_FIELDS:
+        raise UserWarning("Invalid number of fields in transaction.")
+    try:
+        if float(transaction[1]) <= 0 or float(transaction[1]) > 99999:
+            raise ValueError()
+    except ValueError:
+            raise UserWarning("Invalid transaction amount: {0}".format(transaction[1]))
     return transaction
 
 # synchronizes annual budget with monthly budget data
@@ -150,54 +142,76 @@ def getSheetService():
     creds = store.get()
     return build('sheets', 'v4', http=creds.authorize(Http())).spreadsheets().values()
 
-# save monthly/annual spreadsheet ID in configuration file
-def setSheetId(args):
-    ssheetId = extractId(args.params)
-    config = {MONTHLY_ID_KEY: args.ssheetId.monthly, ANNUAL_ID_KEY: args.ssheetId.annual}
-    config[MONTHLY_ID_KEY if args.command == 'murl' else ANNUAL_ID_KEY] = ssheetId
-    print(("Monthly" if args.command == 'murl' else "Annual") + " Budget Spreadsheet ID:", ssheetId)
-    with open(CONFIG_FILE_PATH, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=4, ensure_ascii=False)
-
-# reads program arguments & configuration
-def readArgs():
+# reads configuration from file
+def readConfig():
     try:
-        params = None if len(sys.argv) == 2 else sys.argv[2]
-        ids = json.load(open(CONFIG_FILE_PATH))
-        return Arguments(sys.argv[1], params, SheetId(ids[MONTHLY_ID_KEY], ids[ANNUAL_ID_KEY]))
+        return json.load(open(CONFIG_FILE_PATH))
     except FileNotFoundError:
-        print('Configuration file moved or deleted: {0}'.format(CONFIG_FILE_PATH), file=sys.stderr)
-        sys.exit(1)
+        raise UserWarning('Configuration file not found: {0}'.format(CONFIG_FILE_PATH))
+
+# raises a UserWarning regarding an invalid month input
+def raiseInvalidMonthError(date):
+    error = "Invalid month: {0}\nValid months are:\n{1}"
+    raise UserWarning(error.format(date, [m.lower() for m in MONTH_COLS.keys()]))
+
+# parses transaction date & reads the corresponding monthly budget spreadsheet ID
+def getMonthlySheetId(date, sheetIds):
+    month = date[:3] if type(date) is str else date.strftime("%b")
+    try:
+        return sheetIds[month.lower()]
+    except KeyError:
+        raiseInvalidMonthError(month)
+
+# reads program arguments
+def readArgs():
+    if sys.argv[1] not in COMMAND_SET:
+        raise UserWarning("Invalid command. Valid commands are:", COMMAND_SET)
+    elif sys.argv[1] in ('income', 'expense'):
+        if len(sys.argv) != 3:
+            raise UserWarning("Missing transaction parameters for '{0}' command.".format(sys.argv[1]))
+        return sys.argv[1], sys.argv[2]
+    else:
+        if len(sys.argv) == 3:
+            month = sys.argv[2].lower()
+            if month not in [m.lower() for m in MONTH_COLS.keys()]:
+                raiseInvalidMonthError(month)
+        else:
+            month = datetime.now().strftime("%b").lower()
+        return sys.argv[1], month
 
 def main():
-    args = readArgs()
-    if args.command in ('murl', 'aurl'):
-        setSheetId(args)
-        return
-    service = getSheetService()
-    if args.command == 'log':
-        expenses = readTransactions(service, args.ssheetId.monthly, "expense")
-        income = readTransactions(service, args.ssheetId.monthly, "income")
-        logTransactions(expenses, "EXPENSES")
-        logTransactions(income, "INCOME")
-        return
-    summary = readSummaryPage(service, args.ssheetId.monthly)
-    if args.command == 'summary':
-        printHeader(summary.title, 16)
-        print("Expenses:{0:>7s}\nIncome:{1:>9s}".format(summary.cells[14][1], summary.cells[14][7]))
-    elif args.command == 'categories':
-        listCategories(summary.categories.expense, "EXPENSES")
-        listCategories(summary.categories.income, "INCOME")
-    elif args.command == 'sync':
-        sync(service, args.ssheetId.annual, 'Expenses', summary.title, summary.categories.expense)
-        sync(service, args.ssheetId.annual, 'Income', summary.title, summary.categories.income)
-    elif args.command in ('expense', 'income'):
-        transaction = parseTransaction(args.params)
-        categories = summary.categories.expense if args.command == 'expense' else summary.categories.income
-        if isValid(transaction, categories):
-            insertTransaction(transaction, service, args, summary.title)
-    else:
-        print("Invalid command. Valid commands are:", COMMAND_SET, file=sys.stderr)
-
+    try:
+        sheetIds = readConfig()
+        command, param = readArgs()
+        service = getSheetService()
+        if command in ('expense', 'income'):
+            transaction = parseTransaction(param)
+            monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
+            summary = readSummaryPage(service, monthlySheetId)
+            categories = summary.categories.expense if command == 'expense' else summary.categories.income
+            validate(transaction, categories)
+            transaction[0] = str(transaction[0])[:10]
+            insertTransaction(transaction, service, command, monthlySheetId, summary.title)
+            return
+        monthlySheetId = sheetIds[param]
+        if command == 'log':
+            expenses = readTransactions(service, monthlySheetId, "expense")
+            income = readTransactions(service, monthlySheetId, "income")
+            logTransactions(expenses, "EXPENSES")
+            logTransactions(income, "INCOME")
+            return
+        summary = readSummaryPage(service, monthlySheetId)
+        if command == 'summary':
+            printHeader(summary.title, 16)
+            print("Expenses:{0:>7s}\nIncome:{1:>9s}".format(summary.cells[14][1], summary.cells[14][7]))
+        elif command == 'categories':
+            listCategories(summary.categories.expense, "EXPENSES")
+            listCategories(summary.categories.income, "INCOME")
+        elif command == 'sync':
+            sync(service, sheetIds[ANNUAL_ID_KEY], 'Expenses', summary.title, summary.categories.expense)
+            sync(service, sheetIds[ANNUAL_ID_KEY], 'Income', summary.title, summary.categories.income)
+    except UserWarning as e:
+        print(str(e), file=sys.stderr)
+        
 if __name__ == '__main__':
     main()
