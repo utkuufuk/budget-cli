@@ -2,15 +2,16 @@
  * **insert transaction entries**
  * **view transaction logs & summary**
  * **synchronize with annual budget**
+ * **once-in-a-year configuration**
 
 ![Demo](demo.gif)
 
 ## Preliminaries
- 1. Create a *monthly budget* spreadsheet from the [spreadsheet template gallery](https://docs.google.com/spreadsheets/u/0/?ftv=1&folder=0ACoSgW1iveL-Uk9PVA) if you don't already have one.
+ 1. Create *monthly budget* spreadsheets for each month from the [spreadsheet template gallery](https://docs.google.com/spreadsheets/u/0/?ftv=1&folder=0ACoSgW1iveL-Uk9PVA).
 
  2. Optionally, create an additional *annual budget* spreadsheet if you want to use the synchronization feature.
 
- 3. Take note of the new spreadsheet URL(s):
+ 3. Take note of the SPREADSHEET_IDs which is embedded inside the URL:
 ``` cmd
 https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ```
@@ -18,59 +19,72 @@ https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ## Install
  1. Complete steps 1 & 2 of the [quickstart guide](https://developers.google.com/sheets/api/quickstart/python). Make sure that you copy the **`credentials.json`** file into **project directory.**
 
- 2. From project directory:
+ 2. Update spreadsheet IDs inside [config.json](config.json) with your own monthly budget spreadsheet IDs.
+
+ 3. From project directory:
 ``` sh
 ./install.sh
 ```
  
- 3. Make sure to [select monthly (and annual) spreadsheet(s)](#spreadsheet-selection) before using other commands.
-
 ## Uninstall
 ``` sh
 ./uninstall.sh
 ```
 
 ## Usage
-### Spreadsheet Selection
-``` sh
-# set monthly spreadsheet by URL
-budget murl <MONTHLY_SPREADSHEET_URL>
+ * For `summary`, `categories`, `log` and `sync` commands, this month's spreadsheet will be used unless specified explicitly.
 
-# set annual spreadsheet by URL
-budget aurl <ANNUAL_SPREADSHEET_URL>
-```
-
-### Monitoring
-``` sh
-# print monthly budget summary
-budget summary
-
-# list all monthly budget categories & amounts
-budget categories
-
-# log monthly budget transaction history
-budget log
-```
+ * For `expense` and `income` commands, today's date will be assigned and this month's spreadsheet will be used unless a custom date is specified explicitly as the first argument of transaction parameters.
 
 ### Transaction Entry
 ``` sh
 # append expense for custom date
-budget expense "<Date>,<Amount>,<Description>,<Category>"
+budget expense "Jun 9, 40, Pizza, Food"
 
 # append expense for today
-budget expense "<Amount>,<Description>,<Category>"
+budget expense "40, Pizza, Food"
 
 # append income for custom date
-budget income "<Date>,<Amount>,<Description>,<Category>"
+budget income "Aug 2, 3000, Paycheck
 
 # append income for today
 budget income "<Amount>,<Description>,<Category>"
+```
+
+### Summary
+``` sh
+# print monthly budget summary for this month
+budget summary
+
+# print monthly budget summary for January
+budget summary jan
+```
+
+### Categories
+``` sh
+# list all monthly budget categories & amounts for this month
+budget categories
+
+# list all monthly budget categories & amounts for February
+budget categories feb
+```
+
+### Log
+``` sh
+# log monthly budget transaction history for this month
+budget log
+
+# log monthly budget transaction history for March
+budget log mar
 ```
 
 ### Synchronization
  For annual synchronization, expense & income categories must be exactly the same across monthly and annual budget spreadsheets.
 
 ``` sh
-# update annual budget with monthly expenses & income
+# update annual budget with expenses & income of this month
 budget sync
+
+# update annual budget with expenses & income of April
+budget sync apr
 ```
