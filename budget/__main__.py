@@ -197,7 +197,7 @@ def main():
             insertTransaction(transaction, service, command, monthlySheetId, summary.title)
             return
         if command == 'summary':
-            printHeader("|  {0:<9} |  Expenses  |  Income   |".format("Month"), 39)
+            printHeader("|  Month     |  Expenses  |  Income   |", 39)
             for month in MONTH_COLS.keys():
                 if len(sys.argv) > 2 and sys.argv[2] != month.lower():
                     continue
