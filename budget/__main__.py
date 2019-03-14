@@ -6,6 +6,7 @@ from pathlib import Path
 from httplib2 import Http
 from datetime import datetime
 from collections import namedtuple
+from collections import OrderedDict
 from oauth2client import file
 from googleapiclient.errors import HttpError
 from googleapiclient.discovery import build
@@ -16,8 +17,10 @@ ANNUAL_ID_KEY = 'annual'
 MAX_ROWS = 1000
 NUM_TRANSACTION_FIELDS = 4
 FIRST_TRANSACTION_ROW = 5
-MONTH_COLS = {'Jan':'D', 'Feb':'E', 'Mar':'F', 'Apr':'G', 'May':'H', 'Jun':'I',
-              'Jul':'J', 'Aug':'K', 'Sep':'L', 'Oct':'M', 'Nov':'N', 'Dec':'O'}
+MONTH_COLS = OrderedDict([
+    ('Jan','D'), ('Feb','E'), ('Mar','F'), ('Apr','G'), ('May','H'), ('Jun','I'),
+    ('Jul','J'), ('Aug','K'), ('Sep','L'), ('Oct','M'), ('Nov','N'), ('Dec','O')
+])
 COMMAND_SET = ['summary', 'categories', 'log', 'sync', 'expense', 'income']
 
 Categories = namedtuple('Categories', 'expense, income')
