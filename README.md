@@ -17,7 +17,7 @@ https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ```
 
 ## Install
- 1. Complete steps 1 & 2 of the [quickstart guide](https://developers.google.com/sheets/api/quickstart/python). Make sure that you copy the **`credentials.json`** file into **project directory.**
+ 1. Complete steps 1 in the [quickstart guide](https://developers.google.com/sheets/api/quickstart/python). Make sure that you copy the **`credentials.json`** file into **project directory.**
 
  2. Update spreadsheet IDs inside [config.json](config.json) with your own monthly budget spreadsheet IDs.
 
