@@ -36,6 +36,8 @@ https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 
  * For `expense` and `income` commands, today's date will be assigned and this month's spreadsheet will be used unless a custom date is specified explicitly as the first argument of transaction parameters.
 
+ * For `edit`, original date of the transaction is assigned and this month's spreadsheet will be used unless date is specified explicitly.
+
 ### Transaction Entry
 ``` sh
 # append expense for custom date
@@ -49,6 +51,12 @@ budget income "Aug 2, 3000, Salary, Paycheck"
 
 # append income for today
 budget income "3000, Salary, Paycheck"
+
+# edit line 4 of income for this month (see line number in `budget log`)
+budget edit income 4 "65, Tax Return, Other"
+
+# edit line 5 of expense for September (see line number in `budget log`)
+budget edit expense 5 "Sep 17, Mobile Plan, Communication"
 ```
 
 ### Summary
