@@ -186,16 +186,16 @@ def getMonthlySheetId(date, sheetIds):
 # reads program arguments
 def readArgs():
     if sys.argv[1] not in COMMAND_SET:
-        raise UserWarning("Invalid command. Valid commands are:\n{0}".format(COMMAND_SET))
+        raise UserWarning("Invalid command type: Valid command types are:\n{0}".format(COMMAND_SET))
     elif sys.argv[1] in ('income', 'expense'):
         if len(sys.argv) != 3:
             raise UserWarning("Missing transaction parameters for '{0}' command.".format(sys.argv[1]))
         return sys.argv[1], sys.argv[2]
     elif sys.argv[1] == "edit":
         if sys.argv[2] not in ('income', 'expense'):
-            raise UserWarning("Invalid command. Edit command has to have 'expense' or 'income' as 3rd argument.")
+            raise UserWarning("Invalid command: Edit command has to have 'expense' or 'income' as 3rd argument.")
         if len(sys.argv) != 5:
-            raise UserWarning("Too many or too few argument provided. Exactly 5 arguments are required for edit command.")
+            raise UserWarning("Invalid command: Edit command requires exactly 5 arguments.")
         return sys.argv[1], (sys.argv[2], sys.argv[3], sys.argv[4])
     else:
         if len(sys.argv) == 3:
