@@ -21,7 +21,7 @@ MONTH_COLS = OrderedDict([
     ('Jan','D'), ('Feb','E'), ('Mar','F'), ('Apr','G'), ('May','H'), ('Jun','I'),
     ('Jul','J'), ('Aug','K'), ('Sep','L'), ('Oct','M'), ('Nov','N'), ('Dec','O')
 ])
-COMMAND_SET = ['summary', 'categories', 'log', 'sync', 'expense', 'income']
+COMMAND_SET = ['summary', 'categories', 'log', 'sync', 'expense', 'income', 'edit']
 
 Categories = namedtuple('Categories', 'expense, income')
 Summary = namedtuple('Summary', 'cells, title, categories')
@@ -60,6 +60,20 @@ def insertTransaction(transaction, service, command, monthlySheetId, title):
     writeCells(service, monthlySheetId, rangeName, [transaction])
     print('Transaction inserted in {0} budget:\n{1}'.format(title, transaction))
 
+# edits an existing income/expense transaction in monthly budget spreadsheet
+def editTransaction(lineIndex, newTransaction, service, command, monthlySheetId, title):
+    rowIdx = FIRST_TRANSACTION_ROW + lineIndex - 1
+    startCol = "B" if command == 'expense' else "G"
+    endCol = "E" if command == 'expense' else "J"
+    rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
+    writeCells(service, monthlySheetId, rangeName, [newTransaction])
+    print('Transaction edited in {0} budget:\n{1}'.format(title, newTransaction))
+
+# raises a UserWarning if the line index is invalid
+def validateLineIndex(lineIndex, transactions):
+    if lineIndex not in range(1, len(transactions) + 1):
+        raise UserWarning("Line index of {0} is invalid.".format(lineIndex))
+
 # raises a UserWarning if the transaction is invalid
 def validate(transaction, categories):
     if transaction[3] not in categories.keys():
@@ -71,9 +85,8 @@ def validate(transaction, categories):
 # parses transaction fields & inserts a date field (today) if not specified
 def parseTransaction(params):
     transaction = [e.strip() for e in params.split(',')]
-    if len(transaction) is NUM_TRANSACTION_FIELDS - 1:
-        print("Only 3 fields were specified. Assigning today to date field.")
-        #transaction.insert(0, str(datetime.now())[:10])
+    noExplicitDate = len(transaction) is NUM_TRANSACTION_FIELDS - 1
+    if noExplicitDate:
         transaction.insert(0, datetime.now())
     if len(transaction) != NUM_TRANSACTION_FIELDS:
         raise UserWarning("Invalid number of fields in transaction.")
@@ -82,7 +95,7 @@ def parseTransaction(params):
             raise ValueError()
     except ValueError:
             raise UserWarning("Invalid transaction amount: {0}".format(transaction[1]))
-    return transaction
+    return transaction, noExplicitDate
 
 # synchronizes annual budget with monthly budget data
 def sync(service, ssheetId, sheetName, title, categories):
@@ -129,9 +142,11 @@ def readSummaryPage(service, ssheetId):
 
 # prints entries on the terminal as a table
 def logTransactions(entries, header):
+    index = 1
     printHeader(header, 79)
     for rows in entries:
-        print("{0:>12s} {1:>12s}    {2:<35s} {3:<15s}".format(rows[0], rows[1], rows[2], rows[3]))
+        print("{0:>4s} {1:>12s} {2:>12s}    {3:<35s} {4:<15s}".format(str(index), rows[0], rows[1], rows[2], rows[3]))
+        index += 1
 
 # reads expense & income transactions from monthly budget
 def readTransactions(service, ssheetId, type):
@@ -168,11 +183,17 @@ def getMonthlySheetId(date, sheetIds):
 # reads program arguments
 def readArgs():
     if sys.argv[1] not in COMMAND_SET:
-        raise UserWarning("Invalid command. Valid commands are:\n{0}".format(COMMAND_SET))
+        raise UserWarning("Invalid command type: Valid command types are:\n{0}".format(COMMAND_SET))
     elif sys.argv[1] in ('income', 'expense'):
         if len(sys.argv) != 3:
             raise UserWarning("Missing transaction parameters for '{0}' command.".format(sys.argv[1]))
         return sys.argv[1], sys.argv[2]
+    elif sys.argv[1] == "edit":
+        if sys.argv[2] not in ('income', 'expense'):
+            raise UserWarning("Invalid command: Edit command has to have 'expense' or 'income' as 3rd argument.")
+        if len(sys.argv) != 5:
+            raise UserWarning("Invalid command: Edit command requires exactly 5 arguments.")
+        return sys.argv[1], (sys.argv[2], sys.argv[3], sys.argv[4])
     else:
         if len(sys.argv) == 3:
             month = sys.argv[2].lower()
@@ -188,13 +209,31 @@ def main():
         command, param = readArgs()
         service = getSheetService()
         if command in ('expense', 'income'):
-            transaction = parseTransaction(param)
+            transaction, noExplicitDate = parseTransaction(param)
+            if noExplicitDate is True:
+                print("Only 3 fields were specified. Assigning today to date field.")
             monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
             summary = readSummaryPage(service, monthlySheetId)
             categories = summary.categories.expense if command == 'expense' else summary.categories.income
             validate(transaction, categories)
             transaction[0] = str(transaction[0])[:10]
             insertTransaction(transaction, service, command, monthlySheetId, summary.title)
+            return
+        if command == "edit":
+            subcommand = param[0]
+            lineIndex = int(param[1])
+            transaction, noExplicitDate = parseTransaction(param[2])
+            monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
+            transactions = readTransactions(service, monthlySheetId, subcommand)
+            validateLineIndex(lineIndex, transactions)
+            if noExplicitDate is True:
+                print("Only 3 fields were specified. Assigning original date to date field.")
+                transaction[0] = transactions[lineIndex - 1][0]
+            summary = readSummaryPage(service, monthlySheetId)
+            categories = summary.categories.expense if subcommand == 'expense' else summary.categories.income
+            validate(transaction, categories)
+            transaction[0] = str(transaction[0])[:10]
+            editTransaction(lineIndex, transaction, service, subcommand, monthlySheetId, summary.title)
             return
         if command == 'summary':
             printHeader("|  Month     |  Expenses  |  Income   |", 39)

@@ -2,3 +2,4 @@ token.json
 credentials.json
 .vscode
 budget.egg-info
+venv/
