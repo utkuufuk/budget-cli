@@ -83,13 +83,11 @@ def validate(transaction, categories):
         raise UserWarning(message)
 
 # parses transaction fields & inserts a date field (today) if not specified
-def parseTransaction(params, editMode=False):
+def parseTransaction(params):
     transaction = [e.strip() for e in params.split(',')]
     noExplicitDate = len(transaction) is NUM_TRANSACTION_FIELDS - 1
     if noExplicitDate:
         transaction.insert(0, datetime.now())
-        if editMode is False:
-            print("Only 3 fields were specified. Assigning today to date field.")
     if len(transaction) != NUM_TRANSACTION_FIELDS:
         raise UserWarning("Invalid number of fields in transaction.")
     try:
@@ -211,7 +209,9 @@ def main():
         command, param = readArgs()
         service = getSheetService()
         if command in ('expense', 'income'):
-            transaction, _ = parseTransaction(param)
+            transaction, noExplicitDate = parseTransaction(param)
+            if noExplicitDate is True:
+                print("Only 3 fields were specified. Assigning today to date field.")
             monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
             summary = readSummaryPage(service, monthlySheetId)
             categories = summary.categories.expense if command == 'expense' else summary.categories.income
@@ -222,7 +222,7 @@ def main():
         if command == "edit":
             subcommand = param[0]
             lineIndex = int(param[1])
-            transaction, noExplicitDate = parseTransaction(param[2], editMode=True)
+            transaction, noExplicitDate = parseTransaction(param[2])
             monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
             transactions = readTransactions(service, monthlySheetId, subcommand)
             validateLineIndex(lineIndex, transactions)
