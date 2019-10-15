@@ -61,10 +61,10 @@ def insertTransaction(transaction, service, command, monthlySheetId, title):
     print('Transaction inserted in {0} budget:\n{1}'.format(title, transaction))
 
 # edits an existing income/expense transaction in monthly budget spreadsheet
-def editTransaction(lineIndex, newTransaction, service, subcommand, monthlySheetId, title):
+def editTransaction(lineIndex, newTransaction, service, command, monthlySheetId, title):
     rowIdx = FIRST_TRANSACTION_ROW + lineIndex - 1
-    startCol = "B" if subcommand == 'expense' else "G"
-    endCol = "E" if subcommand == 'expense' else "J"
+    startCol = "B" if command == 'expense' else "G"
+    endCol = "E" if command == 'expense' else "J"
     rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
     writeCells(service, monthlySheetId, rangeName, [newTransaction])
     print('Transaction edited in {0} budget:\n{1}'.format(title, newTransaction))
@@ -84,13 +84,12 @@ def validate(transaction, categories):
 
 # parses transaction fields & inserts a date field (today) if not specified
 def parseTransaction(params, editMode=False):
-    dateAdded = False
     transaction = [e.strip() for e in params.split(',')]
-    if len(transaction) is NUM_TRANSACTION_FIELDS - 1:
+    noExplicitDate = len(transaction) is NUM_TRANSACTION_FIELDS - 1
+    if noExplicitDate:
+        transaction.insert(0, datetime.now())
         if editMode is False:
             print("Only 3 fields were specified. Assigning today to date field.")
-        transaction.insert(0, datetime.now())
-        dateAdded = True
     if len(transaction) != NUM_TRANSACTION_FIELDS:
         raise UserWarning("Invalid number of fields in transaction.")
     try:
@@ -98,7 +97,7 @@ def parseTransaction(params, editMode=False):
             raise ValueError()
     except ValueError:
             raise UserWarning("Invalid transaction amount: {0}".format(transaction[1]))
-    return transaction, dateAdded
+    return transaction, noExplicitDate
 
 # synchronizes annual budget with monthly budget data
 def sync(service, ssheetId, sheetName, title, categories):
