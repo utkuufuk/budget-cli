@@ -181,21 +181,17 @@ def getMonthlySheetId(date, sheetIds):
         raiseInvalidMonthError(month)
 
 # gets a file that has lines and inputs them into the monthly budget
-def ParseFromFile(filename):
-    f= open(filename,"r")
-    if f.mode == 'r':
-        results = []
-        contents = f.readlines()
-        for x in contents: 
-            if x[0] == "#":
-                continue
-            submit = x.split('"')
-            submit[0] = submit[0].strip()
-            results.append(submit)
-        f.close()
-        return results
-    else:
-        raise UserWarning("Error, no file found.")
+def parseTransactionsFile(filename):
+    try:
+        with open(filename, "r") as f:
+            transactions = []
+            for line in f.readlines(): 
+                transaction = line.split('"')
+                transaction[0] = transaction[0].strip()
+                transactions.append(transaction)
+            return transactions
+    except FileNotFoundError:
+        raise UserWarning("File not found: {0}".format(filename))
     
 # reads program arguments
 def readArgs():
@@ -239,19 +235,22 @@ def main():
             insertTransaction(transaction, service, command, monthlySheetId, summary.title)
             return
         if command == 'insert':
-            parsedContent = ParseFromFile(param)
-            i = 1
-            for x in parsedContent:
-                transaction, noExplicitDate = parseTransaction(x[1])
-                if noExplicitDate is True:
-                    print("On line " + str(i) + ", 3 fields were specified. Assigning today to date field.")
-                monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
-                summary = readSummaryPage(service, monthlySheetId)
-                categories = summary.categories.expense if x[0] == 'expense' else summary.categories.income
-                validate(transaction, categories)
-                transaction[0] = str(transaction[0])[:10]
-                insertTransaction(transaction, service, x[0], monthlySheetId, summary.title)
-                i+=1
+            lines = parseTransactionsFile(param)
+            for line in lines:
+                print("\nProcessing command: {0} \"{1}\"".format(line[0], line[1]))
+                try:
+                    transaction, noExplicitDate = parseTransaction(line[1])
+                    if noExplicitDate is True:
+                        print("Only 3 fields were specified. Assigning today to date field.")
+                    monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
+                    summary = readSummaryPage(service, monthlySheetId)
+                    categories = summary.categories.expense if line[0] == 'expense' else summary.categories.income
+                    validate(transaction, categories)
+                    transaction[0] = str(transaction[0])[:10]
+                    insertTransaction(transaction, service, line[0], monthlySheetId, summary.title)
+                except UserWarning as e:
+                    print("Warning: {0}".format(e))
+                    continue
             return
         if command == "edit":
             subcommand = param[0]
