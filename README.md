@@ -34,9 +34,9 @@ https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ## Usage
  * For `summary`, `categories`, `log` and `sync` commands, this month's spreadsheet will be used unless specified explicitly.
 
- * For `expense` and `income` commands, today's date will be assumed and the current month's spreadsheet will be used unless a custom date is specified explicitly as the first argument of transaction parameters.
+ * For `expense` and `income` commands, today's date will be assumed and this month's spreadsheet will be used unless date is specified explicitly.
 
- * For `edit`, original date of the transaction is assigned and this month's spreadsheet will be used unless date is specified explicitly.
+ * For `edit` command, the transaction date will stay the same and this month's spreadsheet will be used unless date is specified explicitly, in which case the month will be determined accordingly.
 
 ### Transaction Entry
 ``` sh
