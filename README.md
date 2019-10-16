@@ -1,8 +1,8 @@
 # budget-cli
- * **insert transaction entries**
- * **view transaction logs & summary**
- * **synchronize with annual budget**
- * **once-in-a-year configuration**
+ * insert/edit transaction entries
+ * view transaction logs & summary
+ * synchronize with annual budget
+ * only configure once in a year
 
 ![Demo](demo.gif)
 
@@ -34,30 +34,42 @@ https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=<SHEET_ID>
 ## Usage
  * For `summary`, `categories`, `log` and `sync` commands, this month's spreadsheet will be used unless specified explicitly.
 
- * For `expense` and `income` commands, today's date will be assigned and this month's spreadsheet will be used unless a custom date is specified explicitly as the first argument of transaction parameters.
+ * For `expense` and `income` commands, today's date will be assumed and the current month's spreadsheet will be used unless a custom date is specified explicitly as the first argument of transaction parameters.
 
  * For `edit`, original date of the transaction is assigned and this month's spreadsheet will be used unless date is specified explicitly.
 
 ### Transaction Entry
 ``` sh
-# append expense for custom date
+# insert expense transaction in June budget
 budget expense "Jun 29, 40, Pizza, Food"
 
-# append expense for today
+# insert expense transaction for today in this month's budget
 budget expense "40, Pizza, Food"
 
-# append income for custom date
+# insert income transaction in August budget
 budget income "Aug 2, 3000, Salary, Paycheck"
 
-# append income for today
+# insert income transaction for today in this month's budget
 budget income "3000, Salary, Paycheck"
 
-# edit line 4 of income for this month (see line number in `budget log`)
+# edit 4th income transaction in this month's budget (see `budget log` for transaction number)
 budget edit income 4 "65, Tax Return, Other"
 
-# edit line 5 of expense for September (see line number in `budget log`)
+# edit 5th expense transaction in September budget (see `budget log sep` for transaction number)
 budget edit expense 5 "Sep 17, Mobile Plan, Communication"
+
+# execute all transaction commands within ./example.txt (path can be relative or absolute)
+budget insert ./example.txt
 ```
+
+Here's what an input file might look like when using the `insert` command:
+```txt
+expense "Jun 29, 40, Pizza, Food"
+expense "40, Pizza, Food"
+income "Aug 2, 3000, Salary, Paycheck"
+income "3000, Salary, Paycheck"
+```
+
 
 ### Summary
 ``` sh
@@ -86,8 +98,8 @@ budget log
 budget log mar
 ```
 
-### Synchronization
- For annual synchronization, expense & income categories must be exactly the same across monthly and annual budget spreadsheets.
+### Annual Budget Synchronization
+In order to synchronize with annual budget, expense & income categories must be exactly the same across all monthly budget spreadsheets and the annual budget spreadsheet.
 
 ``` sh
 # update annual budget with expenses & income of this month
