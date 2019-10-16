@@ -75,7 +75,8 @@ def validateLineIndex(lineIndex, transactions):
         raise UserWarning("Line index of {0} is invalid.".format(lineIndex))
 
 # raises a UserWarning if the transaction is invalid
-def validate(transaction, categories):
+def validateCategory(command, transaction, summary):
+    categories = summary.categories.expense if command == 'expense' else summary.categories.income
     if transaction[3] not in categories.keys():
         message = "Invalid category: {0}. Valid categories are:".format(transaction[3])
         for key in categories:
@@ -229,8 +230,7 @@ def main():
                 print("Only 3 fields were specified. Assigning today to date field.")
             monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
             summary = readSummaryPage(service, monthlySheetId)
-            categories = summary.categories.expense if command == 'expense' else summary.categories.income
-            validate(transaction, categories)
+            validateCategory(command, transaction, summary)
             transaction[0] = str(transaction[0])[:10]
             insertTransaction(transaction, service, command, monthlySheetId, summary.title)
             return
@@ -244,8 +244,7 @@ def main():
                         print("Only 3 fields were specified. Assigning today to date field.")
                     monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
                     summary = readSummaryPage(service, monthlySheetId)
-                    categories = summary.categories.expense if line[0] == 'expense' else summary.categories.income
-                    validate(transaction, categories)
+                    validateCategory(line[0], transaction, summary)
                     transaction[0] = str(transaction[0])[:10]
                     insertTransaction(transaction, service, line[0], monthlySheetId, summary.title)
                 except UserWarning as e:
@@ -262,8 +261,7 @@ def main():
                 print("Only 3 fields were specified. Assigning original date to date field.")
                 transaction[0] = transactions[lineIndex - 1][0]
             summary = readSummaryPage(service, monthlySheetId)
-            categories = summary.categories.expense if subcommand == 'expense' else summary.categories.income
-            validate(transaction, categories)
+            validateCategory(subcommand, transaction, summary)
             transaction[0] = str(transaction[0])[:10]
             editTransaction(lineIndex, transaction, service, subcommand, monthlySheetId, summary.title)
             return
