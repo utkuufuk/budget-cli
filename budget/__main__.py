@@ -21,7 +21,7 @@ MONTH_COLS = OrderedDict([
     ('Jan','D'), ('Feb','E'), ('Mar','F'), ('Apr','G'), ('May','H'), ('Jun','I'),
     ('Jul','J'), ('Aug','K'), ('Sep','L'), ('Oct','M'), ('Nov','N'), ('Dec','O')
 ])
-COMMAND_SET = ['summary', 'categories', 'log', 'sync', 'expense', 'income', 'edit']
+COMMAND_SET = ['summary', 'categories', 'log', 'sync', 'expense', 'income', 'edit', 'insert']
 
 Categories = namedtuple('Categories', 'expense, income')
 Summary = namedtuple('Summary', 'cells, title, categories')
@@ -180,6 +180,23 @@ def getMonthlySheetId(date, sheetIds):
     except KeyError:
         raiseInvalidMonthError(month)
 
+# gets a file that has lines and inputs them into the monthly budget
+def ParseFromFile(filename):
+    f= open(filename,"r")
+    if f.mode == 'r':
+        results = []
+        contents = f.readlines()
+        for x in contents: 
+            if x[0] == "#":
+                continue
+            submit = x.split('"')
+            submit[0] = submit[0].strip()
+            results.append(submit)
+        f.close()
+        return results
+    else:
+        raise UserWarning("Error, no file found.")
+    
 # reads program arguments
 def readArgs():
     if sys.argv[1] not in COMMAND_SET:
@@ -194,6 +211,8 @@ def readArgs():
         if len(sys.argv) != 5:
             raise UserWarning("Invalid command: Edit command requires exactly 5 arguments.")
         return sys.argv[1], (sys.argv[2], sys.argv[3], sys.argv[4])
+    elif sys.argv[1] == "insert":
+        return sys.argv[1], sys.argv[2]
     else:
         if len(sys.argv) == 3:
             month = sys.argv[2].lower()
@@ -218,6 +237,21 @@ def main():
             validate(transaction, categories)
             transaction[0] = str(transaction[0])[:10]
             insertTransaction(transaction, service, command, monthlySheetId, summary.title)
+            return
+        if command == 'insert':
+            parsedContent = ParseFromFile(param)
+            i = 1
+            for x in parsedContent:
+                transaction, noExplicitDate = parseTransaction(x[1])
+                if noExplicitDate is True:
+                    print("On line " + str(i) + ", 3 fields were specified. Assigning today to date field.")
+                monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
+                summary = readSummaryPage(service, monthlySheetId)
+                categories = summary.categories.expense if x[0] == 'expense' else summary.categories.income
+                validate(transaction, categories)
+                transaction[0] = str(transaction[0])[:10]
+                insertTransaction(transaction, service, x[0], monthlySheetId, summary.title)
+                i+=1
             return
         if command == "edit":
             subcommand = param[0]
