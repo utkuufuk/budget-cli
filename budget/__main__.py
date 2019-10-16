@@ -180,7 +180,7 @@ def getMonthlySheetId(date, sheetIds):
     except KeyError:
         raiseInvalidMonthError(month)
 
-# gets a file that has lines and inputs them into the monthly budget
+# parses multiple transaction commands from file
 def parseTransactionsFile(filename):
     try:
         with open(filename, "r") as f:
@@ -237,7 +237,7 @@ def main():
         if command == 'insert':
             lines = parseTransactionsFile(param)
             for line in lines:
-                print("\nProcessing command: {0} \"{1}\"".format(line[0], line[1]))
+                print('\nProcessing command: {0} "{1}"'.format(line[0], line[1]))
                 try:
                     transaction, noExplicitDate = parseTransaction(line[1])
                     if noExplicitDate is True:
@@ -250,7 +250,6 @@ def main():
                     insertTransaction(transaction, service, line[0], monthlySheetId, summary.title)
                 except UserWarning as e:
                     print("Warning: {0}".format(e))
-                    continue
             return
         if command == "edit":
             subcommand = param[0]
