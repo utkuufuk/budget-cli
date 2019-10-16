@@ -156,10 +156,13 @@ def readTransactions(service, ssheetId, type):
 
 # authorize & build spreadsheet service
 def getSheetService():
+    temp = os.getcwd()
     os.chdir(APP_DIR)
     store = file.Storage('token.json')
     creds = store.get()
-    return build('sheets', 'v4', http=creds.authorize(Http())).spreadsheets().values()
+    service = build('sheets', 'v4', http=creds.authorize(Http())).spreadsheets().values()
+    os.chdir(temp)
+    return service
 
 # reads configuration from file
 def readConfig():
