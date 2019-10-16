@@ -3,3 +3,5 @@ credentials.json
 .vscode
 budget.egg-info
 venv/
+.vs/
+

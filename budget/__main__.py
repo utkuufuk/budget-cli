@@ -21,7 +21,7 @@ MONTH_COLS = OrderedDict([
     ('Jan','D'), ('Feb','E'), ('Mar','F'), ('Apr','G'), ('May','H'), ('Jun','I'),
     ('Jul','J'), ('Aug','K'), ('Sep','L'), ('Oct','M'), ('Nov','N'), ('Dec','O')
 ])
-COMMAND_SET = ['summary', 'categories', 'log', 'sync', 'expense', 'income', 'edit']
+COMMAND_SET = ['summary', 'categories', 'log', 'sync', 'expense', 'income', 'edit', 'insert']
 
 Categories = namedtuple('Categories', 'expense, income')
 Summary = namedtuple('Summary', 'cells, title, categories')
@@ -75,7 +75,8 @@ def validateLineIndex(lineIndex, transactions):
         raise UserWarning("Line index of {0} is invalid.".format(lineIndex))
 
 # raises a UserWarning if the transaction is invalid
-def validate(transaction, categories):
+def validateCategory(command, transaction, summary):
+    categories = summary.categories.expense if command == 'expense' else summary.categories.income
     if transaction[3] not in categories.keys():
         message = "Invalid category: {0}. Valid categories are:".format(transaction[3])
         for key in categories:
@@ -155,10 +156,13 @@ def readTransactions(service, ssheetId, type):
 
 # authorize & build spreadsheet service
 def getSheetService():
+    temp = os.getcwd()
     os.chdir(APP_DIR)
     store = file.Storage('token.json')
     creds = store.get()
-    return build('sheets', 'v4', http=creds.authorize(Http())).spreadsheets().values()
+    service = build('sheets', 'v4', http=creds.authorize(Http())).spreadsheets().values()
+    os.chdir(temp)
+    return service
 
 # reads configuration from file
 def readConfig():
@@ -180,6 +184,19 @@ def getMonthlySheetId(date, sheetIds):
     except KeyError:
         raiseInvalidMonthError(month)
 
+# parses multiple transaction commands from file
+def parseTransactionsFile(filename):
+    try:
+        with open(filename, "r") as f:
+            transactions = []
+            for line in f.readlines(): 
+                transaction = line.split('"')
+                transaction[0] = transaction[0].strip()
+                transactions.append(transaction)
+            return transactions
+    except FileNotFoundError:
+        raise UserWarning("File not found: {0}".format(filename))
+    
 # reads program arguments
 def readArgs():
     if sys.argv[1] not in COMMAND_SET:
@@ -194,6 +211,8 @@ def readArgs():
         if len(sys.argv) != 5:
             raise UserWarning("Invalid command: Edit command requires exactly 5 arguments.")
         return sys.argv[1], (sys.argv[2], sys.argv[3], sys.argv[4])
+    elif sys.argv[1] == "insert":
+        return sys.argv[1], sys.argv[2]
     else:
         if len(sys.argv) == 3:
             month = sys.argv[2].lower()
@@ -214,10 +233,25 @@ def main():
                 print("Only 3 fields were specified. Assigning today to date field.")
             monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
             summary = readSummaryPage(service, monthlySheetId)
-            categories = summary.categories.expense if command == 'expense' else summary.categories.income
-            validate(transaction, categories)
+            validateCategory(command, transaction, summary)
             transaction[0] = str(transaction[0])[:10]
             insertTransaction(transaction, service, command, monthlySheetId, summary.title)
+            return
+        if command == 'insert':
+            lines = parseTransactionsFile(param)
+            for line in lines:
+                print('\nProcessing command: {0} "{1}"'.format(line[0], line[1]))
+                try:
+                    transaction, noExplicitDate = parseTransaction(line[1])
+                    if noExplicitDate is True:
+                        print("Only 3 fields were specified. Assigning today to date field.")
+                    monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
+                    summary = readSummaryPage(service, monthlySheetId)
+                    validateCategory(line[0], transaction, summary)
+                    transaction[0] = str(transaction[0])[:10]
+                    insertTransaction(transaction, service, line[0], monthlySheetId, summary.title)
+                except UserWarning as e:
+                    print("Warning: {0}".format(e))
             return
         if command == "edit":
             subcommand = param[0]
@@ -230,8 +264,7 @@ def main():
                 print("Only 3 fields were specified. Assigning original date to date field.")
                 transaction[0] = transactions[lineIndex - 1][0]
             summary = readSummaryPage(service, monthlySheetId)
-            categories = summary.categories.expense if subcommand == 'expense' else summary.categories.income
-            validate(transaction, categories)
+            validateCategory(subcommand, transaction, summary)
             transaction[0] = str(transaction[0])[:10]
             editTransaction(lineIndex, transaction, service, subcommand, monthlySheetId, summary.title)
             return
