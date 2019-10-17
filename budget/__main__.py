@@ -156,13 +156,10 @@ def readTransactions(service, ssheetId, type):
 
 # authorize & build spreadsheet service
 def getSheetService():
-    temp = os.getcwd()
     os.chdir(APP_DIR)
     store = file.Storage('token.json')
     creds = store.get()
-    service = build('sheets', 'v4', http=creds.authorize(Http())).spreadsheets().values()
-    os.chdir(temp)
-    return service
+    return build('sheets', 'v4', http=creds.authorize(Http())).spreadsheets().values()
 
 # reads configuration from file
 def readConfig():
@@ -224,6 +221,7 @@ def readArgs():
 
 def main():
     try:
+        cwd = os.getcwd()
         sheetIds = readConfig()
         command, param = readArgs()
         service = getSheetService()
@@ -238,7 +236,9 @@ def main():
             insertTransaction(transaction, service, command, monthlySheetId, summary.title)
             return
         if command == 'insert':
+            os.chdir(cwd)
             lines = parseTransactionsFile(param)
+            os.chdir(APP_DIR)
             for line in lines:
                 print('\nProcessing command: {0} "{1}"'.format(line[0], line[1]))
                 try:
