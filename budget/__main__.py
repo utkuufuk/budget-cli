@@ -227,8 +227,6 @@ def main():
         service = getSheetService()
         if command in ('expense', 'income'):
             transaction, noExplicitDate = parseTransaction(param)
-            if noExplicitDate is True:
-                print("Only 3 fields were specified. Assigning today to date field.")
             monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
             summary = readSummaryPage(service, monthlySheetId)
             validateCategory(command, transaction, summary)
@@ -243,8 +241,6 @@ def main():
                 print('\nProcessing command: {0} "{1}"'.format(line[0], line[1]))
                 try:
                     transaction, noExplicitDate = parseTransaction(line[1])
-                    if noExplicitDate is True:
-                        print("Only 3 fields were specified. Assigning today to date field.")
                     monthlySheetId = getMonthlySheetId(transaction[0], sheetIds)
                     summary = readSummaryPage(service, monthlySheetId)
                     validateCategory(line[0], transaction, summary)
@@ -261,7 +257,6 @@ def main():
             transactions = readTransactions(service, monthlySheetId, subcommand)
             validateLineIndex(lineIndex, transactions)
             if noExplicitDate is True:
-                print("Only 3 fields were specified. Assigning original date to date field.")
                 transaction[0] = transactions[lineIndex - 1][0]
             summary = readSummaryPage(service, monthlySheetId)
             validateCategory(subcommand, transaction, summary)
