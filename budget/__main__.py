@@ -17,6 +17,7 @@ ANNUAL_ID_KEY = 'annual'
 MAX_ROWS = 1000
 NUM_TRANSACTION_FIELDS = 4
 FIRST_TRANSACTION_ROW = 5
+MIN_DESCRIPTION_LENGTH = 11
 MONTH_COLS = OrderedDict([
     ('Jan','D'), ('Feb','E'), ('Mar','F'), ('Apr','G'), ('May','H'), ('Jun','I'),
     ('Jul','J'), ('Aug','K'), ('Sep','L'), ('Oct','M'), ('Nov','N'), ('Dec','O')
@@ -58,7 +59,7 @@ def insertTransaction(transaction, service, command, monthlySheetId, title):
     endCol = "E" if command == 'expense' else "J"
     rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
     writeCells(service, monthlySheetId, rangeName, [transaction])
-    print('Transaction inserted in {0} budget:\n{1}'.format(title, transaction))
+    logTransactions([transaction], 'Transaction inserted in {0} budget:'.format(title), rowIdx - FIRST_TRANSACTION_ROW + 1)
 
 # edits an existing income/expense transaction in monthly budget spreadsheet
 def editTransaction(lineIndex, newTransaction, service, command, monthlySheetId, title):
@@ -67,7 +68,7 @@ def editTransaction(lineIndex, newTransaction, service, command, monthlySheetId,
     endCol = "E" if command == 'expense' else "J"
     rangeName = "Transactions!" + startCol + str(rowIdx) + ":" + endCol + str(rowIdx)
     writeCells(service, monthlySheetId, rangeName, [newTransaction])
-    print('Transaction edited in {0} budget:\n{1}'.format(title, newTransaction))
+    logTransactions([newTransaction], 'Transaction edited in {0} budget:'.format(title), lineIndex)
 
 # raises a UserWarning if the line index is invalid
 def validateLineIndex(lineIndex, transactions):
@@ -141,13 +142,16 @@ def readSummaryPage(service, ssheetId):
     expenseCategories = {cells[row][0]:cells[row][3] for row in range(20, len(cells))}
     return Summary(cells, cells[0][0], Categories(expenseCategories, incomeCategories))
 
-# prints entries on the terminal as a table
-def logTransactions(entries, header):
-    index = 1
-    printHeader(header, 79)
-    for rows in entries:
-        print("{0:>4s} {1:>12s} {2:>12s}    {3:<35s} {4:<15s}".format(str(index), rows[0], rows[1], rows[2], rows[3]))
-        index += 1
+# prints transactions as a table
+def logTransactions(transactions, header, offset = 1):
+    maxDescLen = max(MIN_DESCRIPTION_LENGTH, max([len(d[2]) for d in transactions]))
+    template = "{0}\n\n{1:>4s}  {2:>12s} {3:>12s}   {" + str(4) + ":<" + str(maxDescLen + 2) + "} {5:<15s}"
+    title = template.format(header, "Row", "Date", "Amount", "Description", "Category")
+    printHeader(title, maxDescLen + 50)
+    template = "{0:>4d}  {1:>12s} {2:>12s}   {" + str(3) + ":<" + str(maxDescLen + 2) + "} {4:<15s}"
+    for t in transactions:
+        print(template.format(offset, t[0], t[1], t[2], t[3]))
+        offset += 1
 
 # reads expense & income transactions from monthly budget
 def readTransactions(service, ssheetId, type):
