@@ -144,6 +144,8 @@ def readSummaryPage(service, ssheetId):
 
 # prints transactions as a table
 def logTransactions(transactions, header, offset = 1):
+    if len(transactions) is 0:
+        return
     maxDescLen = max(MIN_DESCRIPTION_LENGTH, max([len(d[2]) for d in transactions]))
     template = "{0}\n\n{1:>4s}  {2:>12s} {3:>12s}   {" + str(4) + ":<" + str(maxDescLen + 2) + "} {5:<15s}"
     title = template.format(header, "Row", "Date", "Amount", "Description", "Category")
